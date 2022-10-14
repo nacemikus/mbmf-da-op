@@ -16,12 +16,9 @@ data {
   
   int<lower=-4, upper=5> reward_t0[N,T];
   
+  int<lower=0, upper=1> serum_ami_high[N];
   int<lower=0, upper=1> naltrexone[N];
   int<lower=0, upper=1> amisulpride[N];
-  int<lower=0, upper=1> dat[N];
-  int<lower=0, upper=1> ankk[N];
-  int<lower=0, upper=1> darpp[N];
-  real comt[N];
 }
 transformed data {
 }
@@ -33,149 +30,53 @@ parameters {
   matrix[6, N] z;
   cholesky_factor_corr[6] L_Omega;
   // fixed parameters
-  // real beta_nal;
-  // real beta_ami;
-  // 
-  // real beta_nal_ankk;
-  // real beta_ami_ankk;
-  // real beta_nal_dat;
-  // real beta_ami_dat;
-  // real beta_nal_comt;
-  // real beta_ami_comt;
-  // real beta_nal_darpp;
-  // real beta_ami_darpp;
-  // 
-  // real beta_ankk;
-  // 
-  // real beta_dat;
-  // 
-  // real beta_comt;
-  // 
-  // real beta_darpp;  
-  
   real beta_nal;
   real beta_ami;
+  real beta_nal_g;
+  real beta_ami_g;
+  real beta_nal_noise;
+  real beta_ami_noise;
   
-  real beta_mix1_nal_ankk;
-  real beta_mix1_ami_ankk;
-  real beta_mix1_nal_dat;
-  real beta_mix1_ami_dat;
-  real beta_mix1_nal_comt;
-  real beta_mix1_ami_comt;
-  real beta_mix1_nal_darpp;
-  real beta_mix1_ami_darpp;
-  
-  real beta_mix1_ankk;
-  
-  real beta_mix1_dat;
-  
-  real beta_mix1_comt;
-  
-  real beta_mix1_darpp;  
-  
-  //  real beta_mix2_nal;
-  // real beta_mix2_ami;
-  
-  real beta_mix2_nal_ankk;
-  real beta_mix2_ami_ankk;
-  real beta_mix2_nal_dat;
-  real beta_mix2_ami_dat;
-  real beta_mix2_nal_comt;
-  real beta_mix2_ami_comt;
-  real beta_mix2_nal_darpp;
-  real beta_mix2_ami_darpp;
-  
-  real beta_mix2_ankk;
-  
-  real beta_mix2_dat;
-  
-  real beta_mix2_comt;
-  
-  real beta_mix2_darpp;  
-  
-  
+  real beta_serum_ami_high;
+  real beta_serum_ami_high_g;
+  real beta_serum_ami_high_noise;
+  // Subject-level raw parameters (for Matt trick)
+  // vector[N] a1_g_mean_pr;
+  // vector[N] a1_l_mean_pr;
   // 
-  real tau_nal;
-  real tau_ami;
-
-  real<lower=0> tau_nal_ankk;
-  real<lower=0> tau_ami_ankk;
-  real<lower=0> tau_nal_dat;
-  real<lower=0> tau_ami_dat;
-  real<lower=0> tau_nal_comt;
-  real<lower=0> tau_ami_comt;
-  real<lower=0> tau_nal_darpp;
-  real<lower=0> tau_ami_darpp;
-  //
-  real<lower=0> tau_ankk;
-
-  real<lower=0> tau_dat;
-
-  real<lower=0> tau_comt;
-
-  real<lower=0> tau_darpp;
+  // vector[N] beta1_mean_pr;
+  // vector[N] g_mean_pr;
+  // vector[N] w_mean_pr;
+  // // vector[N] lambda_mean_pr;
+  // vector[N] st_mean_pr;
   // 
-  // real gamma_nal;
-  // real  gamma_ami;
-  
-  real <lower=0, upper =1>  gamma_nal_ankk;
-  real <lower=0, upper =1>  gamma_ami_ankk;
-  real <lower=0, upper =1>  gamma_nal_dat;
-  real <lower=0, upper =1>  gamma_ami_dat;
-  real <lower=0, upper =1>  gamma_nal_comt;
-  real <lower=0, upper =1>  gamma_ami_comt;
-  real <lower=0, upper =1>  gamma_nal_darpp;
-  real <lower=0, upper =1>  gamma_ami_darpp;
-  
-  real <lower=0, upper =1>  gamma_ankk;
-  
-  real <lower=0, upper =1>  gamma_dat;
-  
-  real <lower=0, upper =1>  gamma_comt;
-  
-  real <lower=0, upper =1>  gamma_darpp;  
-  
+  // vector[N] sess_a1_g_pr;
+  // vector[N] sess_a1_l_pr;
+  // vector[N] sess_beta1_pr;
+  // vector[N] sess_g_pr;
+  // vector[N] sess_w_pr;
+  // // vector[N] sess_lambda_pr;
+  // vector[N] sess_st_pr;
   
 }
 transformed parameters {
   // Transform subject-level raw parameters
-  // real beta_nal;
-  // real beta_ami;
-  
-  real beta_nal_ankk;
-  real beta_ami_ankk;
-  real beta_nal_dat;
-  real beta_ami_dat;
-  real beta_nal_comt;
-  real beta_ami_comt;
-  real beta_nal_darpp;
-  real beta_ami_darpp;
-  
-  real beta_ankk;
-  
-  real beta_dat;
-  
-  real beta_comt;
-  
-  real beta_darpp;
-  
-  real phi_scale;
-  
   vector[N] g_mean;
-  vector[N]         beta1_mean;
+  vector[N] beta1_mean;
   
   vector[N] w_mean;
+  
   
   vector<lower=0,upper=1>[N] g;
   vector<lower=0>[N]         beta1;
   
+  // vector<lower=0,upper=5>[N] pi;
   vector<lower=0,upper=1>[N] w;
   
   
   vector<lower=0,upper=1>[N] g_t0;
   vector<lower=0>[N]         beta1_t0;
   
-  // vector<lower=0,upper=5>[N] pi;
   vector<lower=0,upper=1>[N] w_t0;
   
   
@@ -183,60 +84,30 @@ transformed parameters {
   vector[N] sess_beta1;
   
   vector[N] sess_w;
+  // vector[N] sess_lambda;
+  
+  
   matrix[6, N] r1;
   
   r1 = (diag_pre_multiply(sigma,L_Omega) * z);
-  
-  phi_scale = 0.001;
-  
-  // beta_nal = gamma_nal*beta_mix1_nal + (1-gamma_nal)*beta_mix2_nal;
-  // beta_ami = gamma_ami*beta_mix1_ami + (1-gamma_ami)*beta_mix2_ami;
-  
-  
-  beta_nal_ankk = gamma_nal_ankk*beta_mix1_nal_ankk + (1-gamma_nal_ankk)*beta_mix2_nal_ankk;
-  beta_nal_comt = gamma_nal_comt*beta_mix1_nal_comt + (1-gamma_nal_comt)*beta_mix2_nal_comt;
-  beta_nal_darpp = gamma_nal_darpp*beta_mix1_nal_darpp + (1-gamma_nal_darpp)*beta_mix2_nal_darpp;
-  beta_nal_dat = gamma_nal_dat*beta_mix1_nal_dat + (1-gamma_nal_dat)*beta_mix2_nal_dat;
-  
-  beta_ami_dat = gamma_ami_dat*beta_mix1_ami_dat + (1-gamma_ami_dat)*beta_mix2_ami_dat;
-  beta_ami_comt = gamma_ami_comt*beta_mix1_ami_comt + (1-gamma_ami_comt)*beta_mix2_ami_comt;
-  beta_ami_darpp = gamma_ami_darpp*beta_mix1_ami_darpp + (1-gamma_ami_darpp)*beta_mix2_ami_darpp;
-  beta_ami_ankk = gamma_ami_ankk*beta_mix1_ami_ankk + (1-gamma_ami_ankk)*beta_mix2_ami_ankk;
-  
-  beta_ankk = gamma_ankk*beta_mix1_ankk + (1-gamma_ankk)*beta_mix2_ankk;
-  beta_dat = gamma_dat*beta_mix1_dat + (1-gamma_dat)*beta_mix2_dat;
-  beta_comt = gamma_comt*beta_mix1_comt + (1-gamma_comt)*beta_mix2_comt;
-  beta_darpp = gamma_darpp*beta_mix1_darpp + (1-gamma_darpp)*beta_mix2_darpp;
   
   for (i in 1:N) {
     
     
     
     beta1_mean[i]  =  mu_p[1] + r1[1,i];
-    w_mean[i]      =  mu_p[2] + r1[2,i] +
-    beta_ankk*ankk[i] + beta_dat*dat[i] +
-    beta_comt*comt[i] + beta_darpp*darpp[i];
-    
-    g_mean[i] =    mu_p[3] + r1[3,i];
+    w_mean[i]      =  mu_p[2] + r1[2,i];
+    g_mean[i]    =  mu_p[3] + r1[3,i] ;
     
     
-    sess_beta1[i] = mu_p[4] + r1[4,i];
-    sess_w[i] = mu_p[5] + r1[5,i] + 
-    (beta_nal_ankk*ankk[i] + beta_nal_comt*comt[i] + 
-    beta_nal_darpp*darpp[i] + beta_nal_dat*dat[i] +beta_nal)*naltrexone[i] + 
-    (beta_ami_ankk*ankk[i] + beta_ami_comt*comt[i] + 
-    beta_ami_darpp*darpp[i] + beta_ami_dat*dat[i] +beta_ami)*amisulpride[i];
-    
-    
-    sess_g[i] = mu_p[6] + r1[6,i];
+    sess_beta1[i] = mu_p[4] + r1[4,i]   + beta_nal_noise*naltrexone[i] + beta_ami_noise*amisulpride[i]+ beta_serum_ami_high_noise*serum_ami_high[i];
+    sess_w[i] =  mu_p[5] + r1[5,i]  + beta_nal*naltrexone[i] + beta_ami*amisulpride[i] + beta_serum_ami_high*serum_ami_high[i];
+    sess_g[i] =   mu_p[6] + r1[6,i]  + beta_nal_g*naltrexone[i] + beta_ami_g*amisulpride[i] + beta_serum_ami_high_g*serum_ami_high[i];
     
     
     beta1_t0[i]  = exp( beta1_mean[i]   );
     w_t0[i]      = Phi_approx( w_mean[i] );
-    
     g_t0[i] =   Phi_approx(  g_mean[i]  );
-    
-    
     
     beta1[i]  = exp( beta1_mean[i]   + sess_beta1[i] );
     w[i]     =  Phi_approx( w_mean[i] + sess_w[i] );
@@ -248,75 +119,36 @@ transformed parameters {
 }
 model {
   // Hyperparameters
-  mu_p  ~ normal(0, 1.5);
+  mu_p  ~ normal(0, 1);
+  
+  // session hyperparameters
+  
   // mu_p[7]  ~ normal(0, 1);
   // mu_p[8]  ~ normal(0, 10);
   sigma ~ normal(0,1);
-  
+  // sigma[1] ~ normal(0,0.2); // beta
+  // sigma[2] ~ normal(0,0.2);
+  // sigma[3] ~ cauchy(0,2);
+  // sigma[4] ~ cauchy(0,2);
+  // sigma[5] ~ cauchy(0,2);
+  // sigma[6] ~ cauchy(0,2);
+  // 
+  // sigma[7] ~ normal(0,0.2); // beta session
+  // sigma[8] ~ cauchy(0,2);
+  // sigma[9] ~ cauchy(0,2);
+  // sigma[10] ~ cauchy(0,2);
+  // sigma[11] ~ cauchy(0,2);
+  // sigma[12] ~ cauchy(0,2);
   // fixed parameters
-  
   beta_nal ~ normal(0,1.5);
   beta_ami ~ normal(0,1.5);
-  
-  gamma_nal_ankk ~ uniform(0,1.0);
-  tau_nal_ankk ~  inv_gamma(0.5,0.5);
-  beta_mix1_nal_ankk ~   normal(0,tau_nal_ankk^2);
-  beta_mix2_nal_ankk ~ normal(0,phi_scale);
-  
-  gamma_nal_dat ~ uniform(0,1.0);
-  tau_nal_dat ~  inv_gamma(0.5,0.5);
-  beta_mix1_nal_dat ~  normal(0,tau_nal_dat^2);
-  beta_mix2_nal_dat ~ normal(0,phi_scale);
-  
-  gamma_nal_darpp ~ uniform(0,1.0);
-  tau_nal_darpp ~  inv_gamma(0.5,0.5);
-  beta_mix1_nal_darpp ~  normal(0,tau_nal_darpp^2);
-  beta_mix2_nal_darpp ~ normal(0,phi_scale);
-  
-  gamma_nal_comt ~ uniform(0,1.0);
-  tau_nal_comt ~  inv_gamma(0.5,0.5);
-  beta_mix1_nal_comt ~  normal(0,tau_nal_comt^2);
-  beta_mix2_nal_comt ~ normal(0,phi_scale);
-  
-  gamma_ami_ankk ~ uniform(0,1.0);
-  tau_ami_ankk ~  inv_gamma(0.5,0.5);
-  beta_mix1_ami_ankk ~   normal(0,tau_ami_ankk^2);
-  beta_mix2_ami_ankk ~ normal(0,phi_scale);
-  
-  gamma_ami_dat ~ uniform(0,1.0);
-  tau_ami_dat ~  inv_gamma(0.5,0.5);
-  beta_mix1_ami_dat ~  normal(0,tau_ami_dat^2);
-  beta_mix2_ami_dat ~ normal(0,phi_scale);
-  
-  gamma_ami_comt ~ uniform(0,1.0);
-  tau_ami_comt ~  inv_gamma(0.5,0.5);
-  beta_mix1_ami_comt ~  normal(0,tau_ami_comt^2);
-  beta_mix2_ami_comt ~ normal(0,phi_scale);
-  
-  gamma_ami_darpp ~ uniform(0,1.0);
-  tau_ami_darpp ~  inv_gamma(0.5,0.5);
-  beta_mix1_ami_darpp ~   normal(0,tau_ami_darpp^2);
-  beta_mix2_ami_darpp ~ normal(0,phi_scale);
-  
-  gamma_darpp ~ uniform(0,1.0);
-  tau_darpp ~  inv_gamma(0.5,0.5);
-  beta_mix1_darpp ~   normal(0,tau_darpp^2);
-  beta_mix2_darpp ~ normal(0,phi_scale);
-  
-  gamma_comt ~ uniform(0,1.0);
-  tau_comt ~  inv_gamma(0.5,0.5);
-  beta_mix1_comt ~  normal(0,tau_comt^2);
-  beta_mix2_comt ~ normal(0,phi_scale);
-  
-  gamma_dat ~ uniform(0,1.0);
-  tau_dat ~  inv_gamma(0.5,0.5);
-  beta_mix1_dat ~  normal(0,tau_dat^2);
-  beta_mix2_dat ~ normal(0,phi_scale);
-  
-  gamma_ankk ~ uniform(0,1.0);
-  tau_ankk ~  inv_gamma(0.5,0.5);
-  beta_mix1_ankk ~  normal(0,tau_ankk^2);
-  beta_mix2_ankk ~ normal(0,phi_scale);
+  beta_nal_g ~ normal(0,1.5);
+  beta_ami_g ~ normal(0,1.5);
+  beta_nal_noise ~ normal(0,1.5);
+  beta_ami_noise ~ normal(0,1.5);
+  beta_serum_ami_high ~ normal(0,1.5);
+  beta_serum_ami_high_g ~ normal(0,1.5);
+  beta_serum_ami_high_noise ~ normal(0,1.5);
   
   
   // individual parameters
@@ -624,38 +456,27 @@ model {
 }
 
 generated quantities {
-  // For group level parameters
   
-  // real<lower=0>         mu_beta1;
-  // // real<lower=0,upper=1> mu_a2;
-  // // real<lower=0>         mu_beta2;
-  // // real<lower=0,upper=5> mu_pi;
-  // real<lower=0,upper=1> mu_w;
-  // // real<lower=0,upper=1> mu_lambda;
-  // real<lower=0,upper=1> mu_a1_t0;
-  // real<lower=0>         mu_beta1_t0;
-  // // real<lower=0,upper=1> mu_a2_t0;
-  // // real<lower=0>         mu_beta2;
-  // // real<lower=0,upper=5> mu_pi;
-  // real<lower=0,upper=1> mu_w_t0;
-  //  real mu_st_t0;
-  //  real mu_st;
-  // real<lower=0,upper=1> mu_lambda_t0;
-  
-  // real mu_sess_a1;
-  // real mu_sess_beta1;
-  // real mu_sess_a2;
-  // real mu_sess_w;
   
   // For log likelihood calculation
-  real log_lik[N];
-  
+  real log_lik[N*T*2];
+  int count_trials;
+ 
   // For posterior predictive check
   real y_pred[N,T];
   real y_pred_t0[N,T];
   // real y_pred_step2[N,T];
   
   // Set all posterior predictions to 0 (avoids NULL values)
+  count_trials = 1;
+  for (i in 1:2*N) {
+    for (t in 1:T) {
+      log_lik[count_trials] = 0;
+      count_trials = count_trials+1;
+      // y_pred_step2[i,t] = -1;
+    }
+  }
+  
   for (i in 1:N) {
     for (t in 1:T) {
       y_pred[i,t] = -1;
@@ -668,29 +489,25 @@ generated quantities {
       // y_pred_step2[i,t] = -1;
     }
   }
-  // Generate group level parameter values
- 
-  // real beta_ami_ankk;
-  // real beta_nal_dat;
-  // real beta_ami_dat;
-  // real beta_nal_comt;
-  // real beta_ami_comt;
-  // real beta_nal_darpp;
-  // real beta_ami_darpp;
-  // 
-  // real beta_ankk;
-  // 
-  // real beta_dat;
-  // 
-  // real beta_comt;
-  // 
-  // real beta_darpp;
+  // // Generate group level parameter values
+  // mu_a1_t0     = Phi_approx( mu_p[1] );
+  // mu_beta1_t0   = exp( mu_p[2] );
+  // // mu_a2_t0      = Phi_approx( mu_p[3] );
+  // // mu_beta2  = exp( mu_p[4] );
+  // // mu_pi     = Phi_approx( mu_p[4] ) * 5;
+  // mu_w_t0       = Phi_approx( mu_p[4] );
+  // // mu_lambda_t0 = Phi_approx( mu_p[5] );
   // 
   // 
-  
-  
-  
+  // mu_a1     = Phi_approx( mu_p[1] +  mu_p[6]);
+  // mu_beta1  = exp( mu_p[2] +  mu_p[7]);
+  // mu_a2     = Phi_approx( mu_p[3] +  mu_p[8]);
+  // // mu_beta2  = exp( mu_p[4] );
+  // // mu_pi     = Phi_approx( mu_p[4] ) * 5;
+  // mu_w      = Phi_approx( mu_p[4] +  mu_p[9]);
+  // mu_st = Phi_approx(mu_p[5]+ mu_p[10]);
   { // local section, this saves time and space
+  count_trials = 1;
   for (i in 1:N) {
     // Define values
     // Define values
@@ -801,7 +618,11 @@ generated quantities {
       
       level1_prob_choice2 = inv_logit( beta1[i]*(v_hybrid[2]-v_hybrid[1]));
       
-      log_lik[i] = log_lik[i] + bernoulli_lpmf( choice01 | level1_prob_choice2 );
+      log_lik[count_trials] = bernoulli_lpmf( choice01 | level1_prob_choice2 );
+      
+      if (is_nan(log_lik[count_trials])) log_lik[count_trials] =0;
+      
+      count_trials = count_trials +1;
       
       // generate posterior prediction for current trial
       y_pred[i,t] = bernoulli_rng(level1_prob_choice2);
@@ -947,7 +768,9 @@ generated quantities {
         // alternative model formulation
         
         
-        log_lik[i] = log_lik[i] + bernoulli_lpmf( choice01_t0 | level1_prob_choice2_t0);
+        log_lik[count_trials] = bernoulli_lpmf( choice01_t0 | level1_prob_choice2_t0);
+        if (is_nan(log_lik[count_trials])) log_lik[count_trials] =0;
+        count_trials = count_trials +1;
         // log_lik[i] = log_lik[i] + categorical_logit_lpmf( choice_t0 | beta1_t0[i]*v_hybrid_t0 );
         
         // generate posterior prediction for current trial

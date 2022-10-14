@@ -31,7 +31,7 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = 4)
 
 if(!file.exists("brms_panas_pos.rds")) {
-brms_model_panas_pos<- brm(PANAS_positive ~ time*ami_dummy + time*nal_dummy + (1|ID),
+brms_model_panas_pos<- brm(PANAS_positive ~ time*(ami_dummy + serum_ami_high + nal_dummy)  + (1|ID),
                           data = dataset_panas_pos,
                           family = gaussian,
                           prior = c(set_prior("cauchy(0,2)", class = "sd"),

@@ -8,18 +8,18 @@
 
 # library(dplyr)
 # library(ggplot2)
-library(tidyr)
+library(tidyverse)
 library(cowplot)
 library(ggthemes)
 library(nlme)
 library(brms)
-library(tidyverse)  # ggplot, dplyr, and friends
+# library(tidyverse)  # ggplot, dplyr, and friends
 library(broom)
 library(loo)
 library(rstanarm)
 library(rstan)
 library(patchwork)  # Lay out multiple ggplot plots; install from https://github.com/thomasp85/patchwork
-library(lmer)
+library(lme4)
 library(lmerTest)
 library("bayesplot")
 # aux functions ----
@@ -30,21 +30,21 @@ source("Utility scripts/aux_functions.r")
 
 # the aux script for running the models in stan, 
 
-source("Util_scripts/run_stan_models_function.r")
+source("Utility scripts/run_stan_models_function.r")
 
 # note that these take long to run, 
 # an already estimated model can be sent upon inquiry (nace.mikus@univie.ac.at)
 
 # load data ---------------------------------------------------------------
 
-source_folder <- "~/mnt/p/userdata/mikusn22/data/2step_task/AnalysisR/"
-data_group<- readRDS("Data/data_group.rds")
-data_beh <- readRDS("Data/data_beh.rds")
+
+data_group<- readRDS("/Data/data_group.rds")
+data_beh <- readRDS("/Data/data_beh.rds")
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = 4)
+# 
 
-subjList = data_group$s %>% unique()
 ############################################################################################################
 # Behavioral analysis ######################################################################################  
 
@@ -52,8 +52,8 @@ subjList = data_group$s %>% unique()
 
 # run model
 if (FALSE) { # this might take long to run
-  if(!file.exists("Brms_stay_beh.rds")){
-    fit_model_beh <- brm(stay_num|trials(1) ~ (session+prev_state_diff+prev_points|ID) + session*prev_points*prev_state_diff*ami_dummy+ 
+  if(!file.exists("Brms_stay_beh_full.rds")){
+    fit_model_beh <- brm(stay_num|trials(1) ~ (session*prev_state_diff*prev_points|ID) + session*prev_points*prev_state_diff*ami_dummy+ 
                            session*prev_points*prev_state_diff*nal_dummy,
                          data = data_beh, family = binomial(),
                          prior = c(set_prior("cauchy(0,2)", class = "sd"),
@@ -62,31 +62,195 @@ if (FALSE) { # this might take long to run
                          #set_prior("lkj(2)", class = "cor")),
                          warmup = 1, iter =2, chains =1,
                          control = list(adapt_delta = 0.80))
-    saveRDS(mc.full, file = "Brms_stay_beh.rds")
-    
+    saveRDS(fit_model_beh, file = "Brms_stay_beh_full.rds")
+    fit_model_beh %>% fixef() %>% round(2) %>%  write.csv(file = "Beh_model_results.csv")
   }else {
-    fit_model_beh <- readRDS("Brms_stay_beh.rds")
+   
+    fit_model_beh <- readRDS("Brms_stay_beh_full.rds")
+ 
+   
+    
   }
 }
-# load model
 
-
-# load posterior samples
+# playaround  to double check----- 
+fit_model_beh <- readRDS("Brms_stay_beh_rew_level.rds")
 post_sam <- posterior_samples(fit_model_beh, pars = c("^b_", "sd_", "sigma"))
+(post_sam$`b_session2:reward_level_highTRUE:prev_state_diffdifferent:ami_dummyAmi`  +
+    post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
 
+# diff-same  rew
+(post_sam$`b_session2:reward_level_highTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:reward_level_midhighTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:reward_level_midlowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:reward_level_lowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+# same  rew
+(  post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
+
+(  post_sam$`b_session2:reward_level_midhighTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
+
+(  post_sam$`b_session2:reward_level_midlowTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
+
+(  post_sam$`b_session2:reward_level_lowTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
+
+# diff  rew
+(post_sam$`b_session2:reward_level_highTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:reward_level_midhighTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:reward_level_midhighTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +post_sam$`b_session2:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:reward_level_midlowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:reward_level_midlowTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:reward_level_lowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +  post_sam$`b_session2:reward_level_lowTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`) %>% sf()
+
+##
+
+
+
+
+(post_sam$`b_session2:reward_level_midhighTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:reward_level_midlowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:reward_level_lowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+
+
+    
+(post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi`) %>% sf()
+  
+(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
+
+
+(post_sam$`b_session2:reward_level_midhighTRUE:prev_state_diffdifferent:ami_dummyAmi`  +
+    post_sam$`b_session2:reward_level_midhighTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
+
+(post_sam$`b_session2:reward_level_highTRUE:prev_state_diffdifferent:ami_dummyAmi`  +
+    post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi` +
+    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +
+    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
+
+# prev win loss: ####
+fit_model_beh3 <- readRDS("Brms_stay_beh_winloss_full.rds")
+
+# fit_model_beh3 <- readRDS("Brms_points_prevwin_beh_serum.rds")
+
+post_sam <- posterior_samples(fit_model_beh3, pars = c("^b_", "sd_", "sigma"))
+
+
+post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:ami_dummyAmi` %>% sf()
+
+(post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:ami_dummyAmi`+ post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:serum_ami_high`) %>% sf()
+
+
+(post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:ami_dummyAmi`)%>% sf()
+
+(post_sam$`b_session2:prevwinwin:ami_dummyAmi`)%>% sf()
+
+(post_sam$`b_session2:prevwinwin:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:serum_ami_high`)%>% sf()
+
+#loss only
+(post_sam$`b_session2:ami_dummyAmi`)%>% sf()
+(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`)%>% sf()
+
+# win only diff
+(post_sam$`b_session2:ami_dummyAmi` +post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`+ post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:ami_dummyAmi`)%>% sf()
+
+# win only same
+(post_sam$`b_session2:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:ami_dummyAmi`)%>% sf()
+
+(post_sam$`b_session2:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:ami_dummyAmi`+
+post_sam$`b_session2:serum_ami_high` + post_sam$`b_session2:prevwinwin:serum_ami_high`)%>% sf()
+
+
+
+
+
+
+## prev pts points #####
+# fit_model_beh3 <- readRDS("Brms_points_beh_prevpts_full.rds")
+fit_model_beh3 <- readRDS("Brms_points_prevpoints_beh_serum.rds")
+post_sam <- posterior_samples(fit_model_beh3, pars = c("^b_", "sd_", "sigma"))
+fit_model_beh3 %>% mcmc_plot( pars = c("^b_"))
+rew_size  = 5
+
+# diff- same rew 5
+
+(rew_size*post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`+ post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`) %>% sf
+
+# high serum
+(post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`) %>% sf
+
+# diff rew_size 
+(rew_size*post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`  + post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`+ 
+    rew_size*post_sam$`b_session2:prev_points:ami_dummyAmi` + post_sam$`b_session2:ami_dummyAmi`) %>% sf()
+
+(post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` +post_sam$`b_session2:prev_points:ami_dummyAmi` ) %>% sf
+
+
+# same rew_size 
+(rew_size*post_sam$`b_session2:prev_points:ami_dummyAmi` + post_sam$`b_session2:ami_dummyAmi`) %>% sf()
+(post_sam$`b_session2:prev_points:ami_dummyAmi` ) %>% sf()
+(post_sam$`b_session2:prev_points:ami_dummyAmi`  + post_sam$`b_session2:prev_points:serum_ami_high`) %>% sf()
+
+
+# rest ####
+# fit_model_beh2 <- readRDS("../Brms_stay_beh.rds")
+fit_model_beh3 <- readRDS("Brms_points_beh_prevpts_full.rds")
+# fit_model_beh3 <- readRDS("Brms_points_beh_winloss_Ses2.rds")
+
+ 
+# reward levels #########
+
+post_sam <- posterior_samples(fit_model_beh, pars = c("^b_", "sd_", "sigma"))
 
 # get the regressiors
 beta_mat <- post_sam %>% 
   transmute(h_beta_prevpt = (b_prev_points+ 1/2*`b_session2:prev_points` + 
-                             `b_prev_points:nal_dummyNal` + `b_prev_points:ami_dummyAmisul`  +
-                               1/2*`b_session2:prev_points:nal_dummyNal` +1/2*`b_session2:prev_points:ami_dummyAmisul`),
+                             `b_prev_points:nal_dummyNal` + `b_prev_points:ami_dummyAmi`  +
+                               1/2*`b_session2:prev_points:nal_dummyNal` +1/2*`b_session2:prev_points:ami_dummyAmi`),
          g_beta_pp_prevpt= (`b_prev_points:prev_state_diffdifferent` +1/2*`b_session2:prev_points:prev_state_diffdifferent`+
-                              1/2* `b_session2:prev_points:prev_state_diffdifferent:nal_dummyNal` +1/2*`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmisul` +
-                               `b_prev_points:prev_state_diffdifferent:nal_dummyNal` +`b_prev_points:prev_state_diffdifferent:ami_dummyAmisul`),
-         e_delta_pp_prevpt_ami_same= (`b_session2:prev_points:ami_dummyAmisul` ),
-         d_delta_pp_prevpt_ami_different= (`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmisul` +
-         `b_session2:prev_points:ami_dummyAmisul` ),
-         f_delta_pp_prevpt_ss_ami= `b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmisul`,
+                              1/2* `b_session2:prev_points:prev_state_diffdifferent:nal_dummyNal` +1/2*`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` +
+                               `b_prev_points:prev_state_diffdifferent:nal_dummyNal` +`b_prev_points:prev_state_diffdifferent:ami_dummyAmi`),
+         e_delta_pp_prevpt_ami_same= (`b_session2:prev_points:ami_dummyAmi` ),
+         d_delta_pp_prevpt_ami_different= (`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` +
+         `b_session2:prev_points:ami_dummyAmi` ),
+         f_delta_pp_prevpt_ss_ami= `b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`,
          b_delta_pp_prevpt_nal_same = `b_session2:prev_points:nal_dummyNal`,
          a_delta_pp_prevpt_nal_different = ( `b_session2:prev_points:nal_dummyNal`+`b_session2:prev_points:prev_state_diffdifferent:nal_dummyNal`),
          c_delta_pp_prevpt_ss_nal = `b_session2:prev_points:prev_state_diffdifferent:nal_dummyNal`)
@@ -96,8 +260,7 @@ beta_mat %>% exp() %>%  apply(2, sf) %>% t()
 # in logodds scale 
 beta_mat  %>%  apply(2, sf) %>% t()
 
-
-## create that stats plot -----
+## create the stats plot -----
 g_stats <- beta_mat %>% select(h_beta_prevpt, g_beta_pp_prevpt, f_delta_pp_prevpt_ss_ami, c_delta_pp_prevpt_ss_nal) %>% 
   # convert them to the long format, group, and get the posterior summaries
   pivot_longer(everything()) %>%
@@ -123,85 +286,11 @@ g_stats <- beta_mat %>% select(h_beta_prevpt, g_beta_pp_prevpt, f_delta_pp_prevp
   scale_y_discrete(labels = rev(c("Prev points", "PrevPoints:PrevState", 
                                 "Ami:Session:PrevPoints:PrevState",
                                  "Nal:Session:PrevPoints:PrevState")))
- 
-## # straight lines plot staying beh ----------------------------------------------
-# 
-# g1 <- data_beh %>%
-#     filter(prev_state_diff == "different") %>%
-#   group_by(ID, session, prev_points, stay) %>%
-#   dplyr::summarize(N=n(),
-#             ami_dummy = ami_dummy[1],
-#             nal_dummy = nal_dummy[1],
-#             drug = drug[1],
-#             dat= dat[1],
-#             darpp = darpp[1]) %>%
-#   mutate(freq=N/sum(N)) %>%
-#    filter(stay == 1) %>%
-# 
-#   ggplot(aes(x = prev_points, y = freq,group = session, color = session)) +
-#     geom_smooth(method=lm)+
-#   # ylim(c(0,1))+#, se = TRUE)  +
-#   scale_x_continuous(breaks=NULL)+
-#   scale_y_continuous(breaks=c(0.3,0.5,0.7), limits = c(0,1), )+
-#     facet_wrap(vars(drug)) +
-#   #"#F8766D" "#00BA38" "#619CFF
-#   scale_color_manual(values=c('#999999','#E69F00'))+
-#   labs(x = "", y= "P(stay)")+
-#   theme_minimal(base_size=25) + 
-#   theme(legend.position = "none",
-#         axis.line = element_line(colour = "black"),
-#         plot.subtitle = element_text(hjust = 0.5),
-#         panel.grid.major = element_blank(),
-#         panel.grid.minor = element_blank(),
-#         panel.background = element_blank(),
-#         axis.text = element_text(size = 18)) + coord_cartesian(ylim=c(0.25, 1))
-# 
-# 
-# g2 <- data_beh %>%
-#   filter(prev_state_diff == "same") %>%
-#   group_by(ID, session, prev_points, stay) %>%
-#   summarize(N=n(),
-#             ami_dummy = ami_dummy[1],
-#             nal_dummy = nal_dummy[1],
-#             drug = drug[1],
-#             dat= dat[1],
-#             darpp = darpp[1]) %>%
-#   mutate(freq=N/sum(N)) %>%
-#   filter(stay == 1)%>%
-#   ggplot(aes(x = prev_points, y = freq, color = session)) +
-#   geom_smooth(method=lm)+
-#   theme(axis.text.x = element_text(face="bold", size = 15))  +
-#   scale_x_continuous(breaks=NULL)+
-#   scale_y_continuous(breaks=c(0.3,0.5,0.7), limits = c(0,1), )+
-#   facet_wrap(vars(drug)) +
-#   #"#F8766D" "#00BA38" "#619CFF
-#   scale_color_manual(values=c('#999999','#E69F00'))+
-#   labs(x = "Previous Points", y= "P(stay)")+
-#   theme_minimal(base_size=25) + 
-#   theme(legend.position = "none",
-#         axis.line = element_line(colour = "black"),
-#         plot.subtitle = element_text(hjust = 0.5),
-#         panel.grid.major = element_blank(),
-#         panel.grid.minor = element_blank(),
-#         panel.background = element_blank(),
-#         axis.title.x = element_text(size=18)) + coord_cartesian(ylim=c(0.25,1))
-# g2
-# 
-# g_stay_lines  <- plot_grid(g1,
-#           g2,
-#           label_x = 0.5,
-#           nrow = 2)
-# g_stay_lines
-# ggsave("stay lines.png", plot = g_stay_lines, device = NULL, path = NULL,
-#        scale = 1, width = 7, height = 7, dpi = 300, limitsize = TRUE)
-# ## plot regression distributions
 
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 ## plot beh model posterior predictions  -------------------------------------------------------
 
-post <- posterior_samples(fit_model_beh)
+post <-  posterior_samples(fit_model_beh)
 
 # define helper functions
 post_fu <- function(x, funct_var) {
@@ -210,16 +299,16 @@ post_fu <- function(x, funct_var) {
   nal_dummy =  as.numeric(x[2] == 2)
   prev_state =  x[3]
   session =  x[4]
-  fitted = post$b_Intercept +  post$b_prev_points * prev_points +  post$b_prev_state_diffdifferent*prev_state+  post$b_session2*session +  post$b_ami_dummyAmisul*ami_dummy + post$b_nal_dummyNal*nal_dummy+
+  fitted = post$b_Intercept +  post$b_prev_points * prev_points +  post$b_prev_state_diffdifferent*prev_state+  post$b_session2*session +  post$b_ami_dummyAmi*ami_dummy + post$b_nal_dummyNal*nal_dummy+
     
     post$`b_session2:prev_points`* prev_points*session +  post$`b_session2:prev_state_diffdifferent`*session*prev_state + post$`b_prev_points:prev_state_diffdifferent`*prev_points*prev_state+
-    post$`b_session2:ami_dummyAmisul`*session*ami_dummy + post$`b_prev_points:ami_dummyAmisul`*prev_points*ami_dummy + post$`b_prev_state_diffdifferent:ami_dummyAmisul`*ami_dummy*prev_state +
+    post$`b_session2:ami_dummyAmi`*session*ami_dummy + post$`b_prev_points:ami_dummyAmi`*prev_points*ami_dummy + post$`b_prev_state_diffdifferent:ami_dummyAmi`*ami_dummy*prev_state +
     post$`b_session2:nal_dummyNal`*session*nal_dummy+ post$`b_prev_points:nal_dummyNal`*prev_points*nal_dummy + post$`b_prev_state_diffdifferent:nal_dummyNal`*prev_state*nal_dummy +
-    post$`b_session2:prev_points:prev_state_diffdifferent`*session*prev_state*prev_points + post$`b_session2:prev_points:ami_dummyAmisul`*session*prev_points*ami_dummy +
-    post$`b_session2:prev_state_diffdifferent:ami_dummyAmisul`*prev_state*session*ami_dummy + post$`b_prev_points:prev_state_diffdifferent:ami_dummyAmisul`*prev_state*prev_points*ami_dummy +
+    post$`b_session2:prev_points:prev_state_diffdifferent`*session*prev_state*prev_points + post$`b_session2:prev_points:ami_dummyAmi`*session*prev_points*ami_dummy +
+    post$`b_session2:prev_state_diffdifferent:ami_dummyAmi`*prev_state*session*ami_dummy + post$`b_prev_points:prev_state_diffdifferent:ami_dummyAmi`*prev_state*prev_points*ami_dummy +
     post$`b_session2:prev_points:nal_dummyNal`*session*prev_points*nal_dummy + post$`b_session2:prev_state_diffdifferent:nal_dummyNal`*session*prev_state*nal_dummy + 
     post$`b_prev_points:prev_state_diffdifferent:nal_dummyNal`*prev_points*prev_state*nal_dummy + 
-    post$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmisul`*prev_points*prev_state*ami_dummy*session +
+    post$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`*prev_points*prev_state*ami_dummy*session +
     post$`b_session2:prev_points:prev_state_diffdifferent:nal_dummyNal`*prev_points*prev_state*nal_dummy*session
   
   # y_lo <- funct_var(fitted)
@@ -282,7 +371,7 @@ g_same <-  nd_new %>% filter(prev_state == 0) %>% ggplot(aes(x= prev_points, y =
   scale_y_continuous(breaks = c(0.2, 0.5, 0.8)) + geom_hline(yintercept =0.5, linetype = "dashed")
 
 # preview plot
-(g_same / g_different)
+# (g_same / g_different)
   
 
 
@@ -294,29 +383,29 @@ post_fu_sess_difference <- function(x, funct_var) {
   nal_dummy =  as.numeric(x[2] == 2)
   prev_state =  x[3]
   session =  0
-  fitted_1 = post$b_Intercept +  post$b_prev_points * prev_points +  post$b_prev_state_diffdifferent*prev_state+  post$b_session2*session +  post$b_ami_dummyAmisul*ami_dummy + post$b_nal_dummyNal*nal_dummy+
+  fitted_1 = post$b_Intercept +  post$b_prev_points * prev_points +  post$b_prev_state_diffdifferent*prev_state+  post$b_session2*session +  post$b_ami_dummyAmi*ami_dummy + post$b_nal_dummyNal*nal_dummy+
     
     post$`b_session2:prev_points`* prev_points*session +  post$`b_session2:prev_state_diffdifferent`*session*prev_state + post$`b_prev_points:prev_state_diffdifferent`*prev_points*prev_state+
-    post$`b_session2:ami_dummyAmisul`*session*ami_dummy + post$`b_prev_points:ami_dummyAmisul`*prev_points*ami_dummy + post$`b_prev_state_diffdifferent:ami_dummyAmisul`*ami_dummy*prev_state +
+    post$`b_session2:ami_dummyAmi`*session*ami_dummy + post$`b_prev_points:ami_dummyAmi`*prev_points*ami_dummy + post$`b_prev_state_diffdifferent:ami_dummyAmi`*ami_dummy*prev_state +
     post$`b_session2:nal_dummyNal`*session*nal_dummy+ post$`b_prev_points:nal_dummyNal`*prev_points*nal_dummy + post$`b_prev_state_diffdifferent:nal_dummyNal`*prev_state*nal_dummy +
-    post$`b_session2:prev_points:prev_state_diffdifferent`*session*prev_state*prev_points + post$`b_session2:prev_points:ami_dummyAmisul`*session*prev_points*ami_dummy +
-    post$`b_session2:prev_state_diffdifferent:ami_dummyAmisul`*prev_state*session*ami_dummy + post$`b_prev_points:prev_state_diffdifferent:ami_dummyAmisul`*prev_state*prev_points*ami_dummy +
+    post$`b_session2:prev_points:prev_state_diffdifferent`*session*prev_state*prev_points + post$`b_session2:prev_points:ami_dummyAmi`*session*prev_points*ami_dummy +
+    post$`b_session2:prev_state_diffdifferent:ami_dummyAmi`*prev_state*session*ami_dummy + post$`b_prev_points:prev_state_diffdifferent:ami_dummyAmi`*prev_state*prev_points*ami_dummy +
     post$`b_session2:prev_points:nal_dummyNal`*session*prev_points*nal_dummy + post$`b_session2:prev_state_diffdifferent:nal_dummyNal`*session*prev_state*nal_dummy + 
     post$`b_prev_points:prev_state_diffdifferent:nal_dummyNal`*prev_points*prev_state*nal_dummy + 
-    post$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmisul`*prev_points*prev_state*ami_dummy*session +
+    post$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`*prev_points*prev_state*ami_dummy*session +
     post$`b_session2:prev_points:prev_state_diffdifferent:nal_dummyNal`*prev_points*prev_state*nal_dummy*session
   
   session =  1
-  fitted_2 = post$b_Intercept +  post$b_prev_points * prev_points +  post$b_prev_state_diffdifferent*prev_state+  post$b_session2*session +  post$b_ami_dummyAmisul*ami_dummy + post$b_nal_dummyNal*nal_dummy+
+  fitted_2 = post$b_Intercept +  post$b_prev_points * prev_points +  post$b_prev_state_diffdifferent*prev_state+  post$b_session2*session +  post$b_ami_dummyAmi*ami_dummy + post$b_nal_dummyNal*nal_dummy+
     
     post$`b_session2:prev_points`* prev_points*session +  post$`b_session2:prev_state_diffdifferent`*session*prev_state + post$`b_prev_points:prev_state_diffdifferent`*prev_points*prev_state+
-    post$`b_session2:ami_dummyAmisul`*session*ami_dummy + post$`b_prev_points:ami_dummyAmisul`*prev_points*ami_dummy + post$`b_prev_state_diffdifferent:ami_dummyAmisul`*ami_dummy*prev_state +
+    post$`b_session2:ami_dummyAmi`*session*ami_dummy + post$`b_prev_points:ami_dummyAmi`*prev_points*ami_dummy + post$`b_prev_state_diffdifferent:ami_dummyAmi`*ami_dummy*prev_state +
     post$`b_session2:nal_dummyNal`*session*nal_dummy+ post$`b_prev_points:nal_dummyNal`*prev_points*nal_dummy + post$`b_prev_state_diffdifferent:nal_dummyNal`*prev_state*nal_dummy +
-    post$`b_session2:prev_points:prev_state_diffdifferent`*session*prev_state*prev_points + post$`b_session2:prev_points:ami_dummyAmisul`*session*prev_points*ami_dummy +
-    post$`b_session2:prev_state_diffdifferent:ami_dummyAmisul`*prev_state*session*ami_dummy + post$`b_prev_points:prev_state_diffdifferent:ami_dummyAmisul`*prev_state*prev_points*ami_dummy +
+    post$`b_session2:prev_points:prev_state_diffdifferent`*session*prev_state*prev_points + post$`b_session2:prev_points:ami_dummyAmi`*session*prev_points*ami_dummy +
+    post$`b_session2:prev_state_diffdifferent:ami_dummyAmi`*prev_state*session*ami_dummy + post$`b_prev_points:prev_state_diffdifferent:ami_dummyAmi`*prev_state*prev_points*ami_dummy +
     post$`b_session2:prev_points:nal_dummyNal`*session*prev_points*nal_dummy + post$`b_session2:prev_state_diffdifferent:nal_dummyNal`*session*prev_state*nal_dummy + 
     post$`b_prev_points:prev_state_diffdifferent:nal_dummyNal`*prev_points*prev_state*nal_dummy + 
-    post$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmisul`*prev_points*prev_state*ami_dummy*session +
+    post$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`*prev_points*prev_state*ami_dummy*session +
     post$`b_session2:prev_points:prev_state_diffdifferent:nal_dummyNal`*prev_points*prev_state*nal_dummy*session
   
   # y_lo <- funct_var(fitted)
@@ -343,7 +432,7 @@ nd_new <- nd_ses %>% mutate(mean_value  = nd_mean,
 ## plot difference in staying across 5 reward levels and overlay the model predictions over it -------------------------
 ### reward level (-2,-1,0,1,2)
 data_beh$reward_level <- floor((data_beh$prev_points + 4)/2) -2 
-g_stay_session_diff <- data_beh%>%
+g_stay_session_diff <- data_beh %>%
   filter(!is.na(prev_points))%>%
   group_by(ID, session, reward_level, prev_state_diff, stay) %>%
   summarise(N=n(), ami_dummy = ami_dummy[1],
@@ -385,6 +474,7 @@ g_beh_diff_stay <- g_stay_session_diff %>%
   group_by(drug, reward_level) %>% summarize(N=n(),
                                             mean_freq_diff = mean(freq_diff, na.rm = TRUE),
                                             se_freq_diff = sd(freq_diff, na.rm = TRUE)/sqrt(N)) 
+
 nd_new_diff <- nd_new %>% filter(prev_state == 1)
 # nd_new_1 %>% View()
 g_different_diff <-
@@ -423,28 +513,73 @@ g_same_diff <-
   facet_wrap(vars(drug)) + ylab("\u0394 P(stay) after\nsame first state") + #labs(subtitle = "Different first state") +
    theme_Publication() + theme(legend.position = "none",axis.text.x = element_blank(), axis.ticks = element_blank())+
   xlab("Previous Points") + coord_cartesian(ylim = c(-0.1,0.15)) + scale_y_continuous(breaks = c(-0.1, 0.0, 0.1))
+
 ## plot figure 3: behavior ----
 
-plot_grid(plot_grid(g_same/g_different, g_same_diff/g_different_diff, nrow = 1),
+plot_grid(plot_grid(g_same/g_different, g_same_diff/g_different_diff, nrow = 1 , labels = c("a", "b")),
           g_stats + theme(axis.text = element_text(size = 10), panel.grid.major.y = element_line( size=.1, color="black", linetype = "dashed")),
           nrow = 2,
-          rel_heights = c(1,0.3))
+          rel_heights = c(1,0.3), labels = c("", "c"))
 
+## stay with amisulpride serum levels -----
+fit_model_beh_serum <- readRDS("Brms_stay_beh_serum.rds")
+post_sam <- posterior_samples(fit_model_beh_serum, pars = c("^b_", "sd_", "sigma"))
+# get the regressiors
+
+beta_mat <- post_sam %>% 
+  transmute(i_delta_pp_prevpt_ami_same_low_serum= (`b_session2:prev_points:ami_dummyAmi` ),
+            h_delta_pp_prevpt_ami_different_low_serum = (`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` +
+                                                `b_session2:prev_points:ami_dummyAmi` ),
+            g_delta_pp_prevpt_ss_ami_low_serum= `b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`,
+            f_delta_pp_prevpt_ami_same_high_serum= (`b_session2:prev_points:ami_dummyAmi` +`b_session2:prev_points:serum_ami_high`),
+            e_delta_pp_prevpt_ami_different_high_serum = (`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` +
+                                                           `b_session2:prev_points:ami_dummyAmi`+`b_session2:prev_points:serum_ami_high`+
+                                                            `b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`),
+            d_delta_pp_prevpt_ss_ami_high_serum= `b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`+
+              `b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`,
+            c_delta_pp_prevpt_same_ami_serum_diff= `b_session2:prev_points:serum_ami_high`,
+            b_delta_pp_prevpt_different_ami_serum_diff=  `b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`,
+            a_delta_pp_prevpt_ss_ami_serum_diff=  `b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`+`b_session2:prev_points:serum_ami_high`
+            )
+
+# print the regressors in odds scale :
+beta_mat %>% exp() %>%  apply(2, sf) %>% t()
+# in logodds scale 
+beta_mat  %>%  apply(2, sf) %>% t()
+
+for (col in  1 : dim(beta_mat)[2]) {
+  print(paste(colnames(beta_mat)[col], beta_mat[,col ] %>% sf(1)))
+}
 #############################################################################################################
 # Computational modelling  ########################################################################
 ## stan models were estimated using the analysis_main.r scripts and custom written stan models
 
 
-## run the stan model
+## run all stan models
 
-if (FALSE) { # this will take some time
-run_model_fit(modelfile = "Stan Scripts/M_new.stan", "Stan Model Results/M_new.rds") }
-fit_model <- readRDS("Stan Model Results/M_new.rds")
+if (FALSE) { # this will take some time - already estimated models are available upon request (nace.mikus@univie.ac.at)
+  # M1 model
+  run_model_fit(modelfile = "Stan Scripts/M_new.stan", "Stan Model Results/M_new.rds") 
+  # kool 1lr model 
+  run_model_fit(modelfile = "Stan Scripts/M_kool_1lr.stan", "Stan Model Results/M_kool_1lr.rds") 
+  # kool 2lr model 
+  run_model_fit(modelfile = "Stan Scripts/M_kool_2lr.stan", "Stan Model Results/M_kool_2lr.rds") 
+  
+  # M1 model with serum
+  run_model_fit(modelfile = "Stan Scripts/M_new_serum.stan", "Stan Model Results/M_new_serum.rds") 
+  # M1 model with serum and stickiness parameters 
+  run_model_fit(modelfile = "Stan Scripts/M_new_sticky_serum.stan", "Stan Model Results/M_new_sticky_serum.rds")
+}
 
 ## posterior distributions of parameters from M1 model ##################
-
+fit_model <- readRDS("Stan Model Results/M_new.rds")
 pars_all <- grep("^beta", names(fit_model), value = T)
+
 pars_all <- pars_all[1:6]
+
+# glimpse results
+
+stan_plot(fit_model, pars_all)
 
 # extract the numbers
 
@@ -456,12 +591,13 @@ Par_extract = rstan::extract(fit_model, pars = c('mu_p', 'sigma', 'sess_w', 'w_m
 
 w_ami <- Par_extract$beta_ami
 w_ami %>% sf(1)
+
 w_nal <- Par_extract$beta_nal 
 w_nal %>% sf(1)
 g_ami <- Par_extract$beta_ami_g
 g_nal <- Par_extract$beta_nal_g
 b_ami<- Par_extract$beta_ami_noise
-
+b_ami %>% sf(1)
 b_nal <- Par_extract$beta_nal_noise
 
 # effect sizes  
@@ -521,147 +657,142 @@ g_stats <- temp_mat %>%
   theme(panel.grid = element_blank(),
         axis.text.x = element_text(size=12),
         strip.background = element_rect(fill = "transparent", color = "transparent")) +
-  scale_y_discrete(labels = rev(c("Ami \u03C9","Nal \u03C9","Ami - Nal \u03C9","Ami \u03B7","Nal \u03B7","Ami \u0263","Nal \u0263")))
+  scale_y_discrete(labels = rev(c("Ami \U1D714","Nal \U1D714","Ami - Nal \U1D714","Ami \U1D702","Nal \U1D702","Ami \U1D6FE","Nal \U1D6FE")))
 g_stats + xlab("Effect sizes (95% and 80% CI)")
 
-d_diff_ami_nal_w %>% sf(1)
+# d_diff_ami_nal_w %>% sf(1)
 
 # phi_approx <- function(x) inv_logit(0.07056*x^3 + 1.5976*x)
 ## results M1 (figure 4)    ----------------------------------------------------
 
-
-
 par ="w"
-par_rstan <- paste(par,"rstan",sep= "_")
-par_t0_rstan <- paste(par,"t0_rstan",sep= "_")
-# par_rstan <- paste(par,"raw",sep= "_")
-# par_t0_rstan <- paste(par,"t0_raw",sep= "_")
-par_sess <- paste("sess",par,"rstan", sep="_")
 
-# data_group %>% dplyr::select(drug == 1) %>%
-# data.frame(w= data_group$w_rstan,w_raw = data_group$w_raw) %>% View()
-par_rstan <- sym(par_rstan)
-par_t0_rstan <- sym(par_t0_rstan)
-par_sess <- sym(par_sess) 
-
-
-
-data_barplot <- data_group %>% 
-  group_by(drug) %>%
-  summarise(N = n(),
-            mean_par = mean(!!par_rstan),
-            mean_par_t0 = mean(!!par_t0_rstan),
-            se_par = sd(!!par_rstan)/sqrt(N), 
-            se_par_t0 = sd(!!par_t0_rstan)/sqrt(N),
-            max_par = max(c(!!par_rstan, !!par_t0_rstan)),
-            min_par = min(c(!!par_rstan, !!par_t0_rstan)))
-# View(data_barplot)
-min_par_no <-min(min(data_barplot$min_par) - 0.1*abs(min(data_barplot$min_par)) ,0)
-max_par_no <- max(max(data_barplot$max_par) + 0.1*abs(max(data_barplot$max_par)) ,1)
-
-
-g1 <- ggplot(data_barplot, aes(x = drug, y= mean_par, fill = drug)) +
-  # geom_bar(position = position_dodge(), stat = "identity") +
-  # geom_point(aes(x = drug, y= mean_par, colour = drug), position = position_dodge(width = 0.1), stat = "identity",  size = 3) +
-  geom_errorbar(aes(ymin= mean_par - se_par, ymax = mean_par+se_par), width = 0.2, position = position_dodge(0.9)) +
-  geom_point(aes(x = drug, y= mean_par, colour = drug), position = position_dodge(width = 0.1), stat = "identity",  size = 3) +
+# parname = "\U1D714"
+plot_par_results <- function(par, data= data_group, title_text = list(NA,NA,NA)) {
+  g= list()
+  parname = case_when(par == "w"~ "\U1D714",
+                      par == "beta1" ~ "\U1D702",
+                      par == "g" ~  "\U1D6FE",
+                      TRUE~  par)
   
-  geom_jitter(data = data_temp_gen, aes(x=drug, y = !!par_rstan), size = 0.2, shape  = 3) +  theme(legend.position = "none") + 
-  #ylim(min_par_no, max_par_no)  +
-  ylab('\u03C9 in session 2') + 
-  theme_minimal(base_size = 25, )   + theme_Publication()+
-  theme(legend.position = "none", plot.title = element_text(face = "bold",size = rel(1.2), hjust = 0.5),
-        axis.line = element_line(colour = "black"), axis.ticks.x = element_blank(), axis.text.x = element_blank())  + labs(title = "") + scale_x_discrete(name = "") +
-  scale_y_continuous(breaks = c(0, 0.5,1), limits= c(0,1))
-
-
-# g1
-
-g2 <- ggplot(data_barplot, aes(x = drug, y= mean_par_t0, fill = drug))+
+  par_rstan <- paste(par,"rstan",sep= "_")
+  par_t0_rstan <- paste(par,"t0_rstan",sep= "_")
+  # par_rstan <- paste(par,"raw",sep= "_")
+  # par_t0_rstan <- paste(par,"t0_raw",sep= "_")
+  par_sess <- paste("sess",par,"rstan", sep="_")
+  
+  # data %>% dplyr::select(drug == 1) %>%
+  # data.frame(w= data$w_rstan,w_raw = data$w_raw) %>% View()
+  par_rstan <- sym(par_rstan)
+  par_t0_rstan <- sym(par_t0_rstan)
+  par_sess <- sym(par_sess) 
+  
+  
+  
+  data_barplot <- data %>% 
+    group_by(drug) %>%
+    summarise(N = n(),
+              mean_par = mean(!!par_rstan),
+              mean_par_t0 = mean(!!par_t0_rstan),
+              se_par = sd(!!par_rstan)/sqrt(N), 
+              se_par_t0 = sd(!!par_t0_rstan)/sqrt(N),
+              max_par = max(c(!!par_rstan, !!par_t0_rstan)),
+              min_par = min(c(!!par_rstan, !!par_t0_rstan)))
+  # View(data_barplot)
+  min_par_no <-min(min(data_barplot$min_par) - 0.1*abs(min(data_barplot$min_par)) ,0)
+  max_par_no <- max(max(data_barplot$max_par) + 0.1*abs(max(data_barplot$max_par)) ,1)
+  
+jw_par = 1
+trans_par = 0.2
+g[[1]] <- ggplot(data_barplot, aes(x = drug, y= mean_par_t0, fill = drug))+
   # geom_bar(position = position_dodge(), stat = "identity") + 
-  geom_errorbar(aes(ymin= mean_par_t0 - se_par_t0, ymax = mean_par_t0+se_par_t0), width = 0.2, position = position_dodge(0.9)) +
-  geom_point(aes(x = drug, y= mean_par_t0, colour = drug), position = position_dodge(width = 0.1), stat = "identity",  size = 3) +
+  geom_point(data = data, aes(x=drug, y = !!par_rstan, fill = drug), alpha =trans_par, position = position_jitterdodge(dodge.width= 0.9, jitter.width =jw_par), shape = 21, colour = "black", size = 2, stroke =1) +  
   
-  geom_jitter(data = data_temp_gen, aes(x=drug, y = !!par_t0_rstan), size = 0.2, shape  = 3)  + theme(legend.position="none") + 
-  ylab('\u03C9 in session 1')  + #ylim(min_par_no, max_par_no) + 
-  theme_minimal(base_size = 25, )   + theme_Publication()+
-  theme(legend.position = "none", plot.title = element_text(face = "bold",size = rel(1.2), hjust = 0.5),
-        axis.line = element_line(colour = "black"), axis.ticks.x = element_blank(), axis.text.x = element_blank())  + labs(title = "  ")+ scale_x_discrete(name = "") +
+  geom_errorbar(aes(ymin= mean_par_t0 - se_par_t0, ymax = mean_par_t0+se_par_t0), width = 0.2, position = position_dodge(0.9)) +
+  geom_point(aes(x = drug, y= mean_par_t0, colour = drug),  position = position_dodge(width = 0.1), stat = "identity",  size = 3, shape = 21, colour = "black") +
+  
+  ylab(paste(parname, 'in session 1') ) + #ylim(min_par_no, max_par_no) + 
+  theme_Publication() +labs(subtitle = title_text[[1]])+
+  theme(legend.position = "none", plot.subtitle = element_text(size = rel(0.8), hjust = 0),
+        axis.line = element_line(colour = "black"), axis.ticks.x = element_blank(), axis.text.x = element_blank(), axis.title.x = element_blank())  + 
   scale_y_continuous(breaks = c(0, 0.5,1), limits= c(0,1))
 # +
 # scale_x_discrete(breaks=c("-4","0","5"))
 
 # g2
+# plot.subtitle = element_text(size = rel(rel_height), hjust = 0), 
+g[[2]] <- ggplot(data_barplot, aes(x = drug, y= mean_par, fill = drug)) +
+  # geom_bar(position = position_dodge(), stat = "identity") +
+  # geom_point(aes(x = drug, y= mean_par, colour = drug), position = position_dodge(width = 0.1), stat = "identity",  size = 3) +
+  geom_point(data = data, aes(x=drug, y = !!par_rstan, fill = drug), alpha = trans_par, position = position_jitterdodge(dodge.width= 0.9, jitter.width = jw_par), shape = 21, colour = "black", size = 2, stroke =1) +  
+  
+  geom_errorbar(aes(ymin= mean_par - se_par, ymax = mean_par+se_par), width = 0.2, position = position_dodge(0.9)) +
+  # geom_point(data = data_change_id, aes(x = Backtransfer_f, y = Change, fill= Treatment, colour= Treatment),  alpha = 0.3, position = position_jitterdodge(dodge.width= 0.9, jitter.width = 0.3), shape = 21, colour = "black", size = 2, stroke =1)+
+  geom_point(aes(x = drug, y= mean_par, colour = drug),  position = position_dodge(width = 0.1), stat = "identity",  size = 3, shape = 21, colour = "black") +
+  
+  theme(legend.position = "none") + 
+  #ylim(min_par_no, max_par_no)  +
+
+  ylab(paste(parname, ' in session 2')) + 
+  theme_Publication()+labs(subtitle = title_text[[2]])+
+  theme(legend.position = "none", plot.subtitle = element_text(size = rel(0.8), hjust = 0),
+        axis.line = element_line(colour = "black"), axis.ticks.x = element_blank(), axis.text.x = element_blank(), axis.title.x = element_blank())  + 
+  scale_y_continuous(breaks = c(0, 0.5,1), limits= c(0,1))
 
 
-g <- ggplot(data = data_temp_gen, aes(x = drug, y = !!par_sess))+  # group = ID, linetype = Genotype)) 
+# g1
+
+
+
+
+g[[3]]  <- ggplot(data = data, aes(x = drug, y = !!par_sess))+  # group = ID, linetype = Genotype)) 
   # geom_violin(aes(fill = drug), alpha = 0.3, width = 0.5, colour = "NA" )+
   geom_boxplot(aes(fill = drug), width=0.5, color="black", alpha=0.9, outlier.shape=NA)+
-  geom_jitter(size = 0.5, width = 0.2) + 
-  theme_Publication()+
-  theme(legend.position = "none", plot.title = element_text(face = "bold",size = rel(1.2), hjust = 0.5),
-        axis.line = element_line(colour = "black"), axis.ticks.x = element_blank(), axis.text.x = element_blank()) + ylab("\u0394 \u03C9'") + labs(title = "  ") + scale_x_discrete(name = "")
-g
-g_all <-  plot_grid(g2,
-                    g1,
-                    g,
+  
+  geom_point(data = data, aes(x=drug, y = !!par_sess, fill = drug), alpha = trans_par, position = position_jitterdodge(dodge.width= 0.9, jitter.width = jw_par), shape = 21, colour = "black", size = 2, stroke =1) +  
+  
+  # geom_jitter(size = 0.5, width = 0.2) + 
+  theme_Publication()+labs(subtitle = title_text[[3]])+
+  theme(legend.position = "none", plot.subtitle = element_text(size = rel(0.8), hjust = 0),
+        axis.line = element_line(colour = "black"), axis.ticks.x = element_blank(), axis.text.x = element_blank(), axis.title.x = element_blank()) + ylab(paste0("\u0394", parname, "'")) 
+# g
+
+return(g)
+}
+g_b <- plot_par_results("beta1", title_text = list(NA, NA, "Inverse temperature") )
+g_g <- plot_par_results("g", title_text =list("", "", "Devaluation parameter"))
+# g_b_s <- plot_par_results("beta1", data = data_group%>% filter(!is.na(serum_f)))
+g_w <- plot_par_results("w", title_text = list("Model-based/model-free weight", "",""))
+# g_w_s <- plot_par_results("w", data = data_group%>% filter(!is.na(serum_f)))
+# g_b_s[[3]]+facet_wrap(~serum_f)
+
+# g_b_s[[2]]+facet_wrap(~serum_f)
+
+g_all <-  plot_grid(g_w[[1]],
+                    g_w[[2]],
+                    g_w[[3]],
                     label_x = 0.5,
                     rel_widths = c(1,1,1),
                     ncol = 3)
-g_all 
 
+
+g_fig_3 <- plot_grid(g_w[[1]],
+                      g_w[[2]],
+                      g_w[[3]],
+                     g_b[[3]],
+                     g_g[[3]],
+  g_stats + xlab("Effect sizes"), ncol = 3, labels = c("a","", "",  "b", "c", "d")
+)
+g_fig_3
 ggsave("g_all_admin_model.png", plot = g_all, device = NULL, path = NULL,
        scale = 1, width = 10, height = 5, dpi = 300, limitsize = TRUE)
 
 
-par ="beta1"
-par_sess <- paste("sess",par,"rstan", sep="_")
-par_sess <- sym(par_sess) 
-g_beta <- ggplot(data = data_temp_gen, aes(x = drug, y = !!par_sess))+  # group = ID, linetype = Genotype)) 
-  # geom_violin(aes(fill = drug))+
-  geom_boxplot(aes(fill = drug), width=0.5, color="black", alpha=0.9, outlier.shape=NA)+
-  geom_jitter(size = 0.5, width = 0.2) + 
-  theme_Publication()+
-  theme(legend.position = "none", plot.title = element_text(face = "bold",size = rel(1.2), hjust = 0.5),
-        axis.line = element_line(colour = "black"), axis.ticks.x = element_blank(), axis.text.x = element_blank()) + ylab("\u0394 \u03B7'") + labs(title = "  ") + scale_x_discrete(name = "")
-# g_beta
-
-
-
-par ="g"
-par_sess <- paste("sess",par,"rstan", sep="_")
-par_sess <- sym(par_sess) 
-g_g <- ggplot(data = data_temp_gen, aes(x = drug, y = !!par_sess))+  # group = ID, linetype = Genotype)) 
-  # geom_violin(aes(fill = drug))+
-  geom_boxplot(aes(fill = drug), width=0.5, color="black", alpha=0.9, outlier.shape=NA)+
-  geom_jitter(size = 0.5, width = 0.2) + 
-  scale_x_discrete(name = "")   + labs(title = "  ") + theme_Publication()+ 
-  theme(legend.position = "none", plot.title = element_text(face = "bold",size = rel(1.2), hjust = 0.5),
-        axis.line = element_line(colour = "black"), axis.ticks.x = element_blank(), axis.text.x = element_blank()) + ylab("\u0394 \u0263'") #+ labs(title ="")
-
-g_g
-
-
-g_all2 <-  plot_grid( g_g, g_beta,
-                      ncol = 2)
-
-g_all2
-ggsave("g_all2_nullmodel.png", plot = g_all2, device = NULL, path = NULL,
-       scale = 1, width = 6, height = 7, dpi = 300, limitsize = TRUE)
-
-g_all <-  plot_grid(g2, g1, g,
-                    g_g, g_beta,
-                    rel_widths = c(1,1,1),
-                    ncol = 3)
-g_all 
-
-ggsave("g_all_admin_model.png", plot = g_all, device = NULL, path = NULL,
-       scale = 1, width = 10, height = 10, dpi = 300, limitsize = TRUE)
 
 
 ## correct predictions + plot -------------------------------------------------------
 path_to_stan = ""
-fit_model <- readRDS("~/mnt/p/userdata/mikusn22/data/2step_task/AnalysisR/Model_results/Final_models/M_g_admin_lkj_new.rds")
+
 
 get_correct_predictions <- function(fit_model) {
 
@@ -1138,11 +1269,53 @@ g_earn <- ggplot(data = data_corr, aes(x= w, y = earn)) +
 L_omega_vect <- rstan::extract(fit_model, pars = "L_Omega")
 
 
+## how does the model relate to staying behavior? ----
+
+rand_eff <- fit_model_beh %>% ranef()
+rand_eff <- rand_eff$ID # %>% glimpse
+rand_eff %>% glimpse
+data_group <- data_group[order(data_group$ID),]
+data_group %>% View
+cor.test(rand_eff[1:112,1,6] , data_group$sess_w_rstan)
+cor.test(rand_eff[1:112,1,8] , data_group$sess_w_rstan)
+cor.test(rand_eff[1:112,1,8] + rand_eff[1:112,1,6] , data_group$sess_w_rstan)
+
+cor.test(rand_eff[1:112,1,6] , data_group$sess_beta1_rstan)
+cor.test(rand_eff[1:112,1,8] , data_group$sess_beta1_rstan)
+cor.test(rand_eff[1:112,1,8] + rand_eff[1:112,1,6] , data_group$sess_beta1_rstan)
+df = tibble(slope_same = rand_eff[1:112,1,6] %>% ave(FUN = scale),
+            slope_different = (rand_eff[1:112,1,8] +rand_eff[1:112,1,6]) %>% ave(FUN = scale),
+            diff_in_slopes = rand_eff[1:112,1,8]%>% ave(FUN = scale),
+            sess_beta1_rstan = data_group$sess_beta1_rstan%>% ave(FUN = scale),
+            sess_w_rstan=data_group$sess_w_rstan%>% ave(FUN = scale),
+            sess_g_rstan=data_group$sess_g_rstan%>% ave(FUN = scale)
+)
+
+mod1 <- lm(data = df, sess_beta1_rstan ~ slope_same +  diff_in_slopes)
+summary(mod1)
+mod1 <- lm(data = df, sess_w_rstan ~ slope_same +  diff_in_slopes)
+summary(mod1)
+
+mod1 <- lm(data = df, diff_in_slopes ~ sess_beta1_rstan + sess_w_rstan+ sess_g_rstan)
+summary(mod1)
+mod1 <- lm(data = df, slope_same ~ sess_beta1_rstan + sess_w_rstan+ sess_g_rstan)
+summary(mod1)
+
+df = tibble(slope_same = (rand_eff[1:112,1,6]+ rand_eff[1:112,1,4]) %>% ave(FUN = scale),
+            slope_different = (rand_eff[1:112,1,8] + rand_eff[1:112,1,7]+rand_eff[1:112,1,6]+ rand_eff[1:112,1,4]) %>% ave(FUN = scale),
+            diff_in_slopes = (rand_eff[1:112,1,8]+ rand_eff[1:112,1,7])%>% ave(FUN = scale),
+            beta1_rstan = data_group$beta1_rstan%>% ave(FUN = scale),
+            w_rstan=data_group$w_rstan%>% ave(FUN = scale),
+            g_rstan=data_group$g_rstan%>% ave(FUN = scale)
+)
+mod1 <- lm(data = df, slope_same ~ beta1_rstan + w_rstan+ g_rstan)
+summary(mod1)
+mod1 <- lm(data = df, diff_in_slopes ~ beta1_rstan + w_rstan+ g_rstan)
+summary(mod1)
+
+
 ## compare models ----------------------------------------------------------
-if (FALSE) { # this will take some time
-  run_model_fit(modelfile = "Stan Scripts/M_kool_1lr.stan", "Stan Model Results/M_kool_1lr.rds") 
-run_model_fit(modelfile = "Stan Scripts/M_kool_2lr.stan", "Stan Model Results/M_kool_2lr.rds") 
-}
+
 fit_model_kool_2lr <- readRDS("Stan Model Results/M_kool_2lr.rds")
 fit_model_kool_1lr <- readRDS("Stan Model Results/M_kool_1lr.rds") 
 
@@ -1181,60 +1354,432 @@ g_compare_models_BMA
 plot_grid(g_compare_models,g_compare_models_BMA)
 
 
+## serum model ----
 
-## mood, age and bmi stats -----------------------
-data_group %>% glimpse
-dataset_chars  <- data_group %>%group_by(drug) %>% summarize(N=n(), 
-                                                             BMI_mean = mean(BMI_new),
-                                                             BMI_sd =sd(BMI_new),
-                                                             sex_m = sum(Sex == "m"),
-                                                             sex_f = sum(Sex =="f"),
-                                                             age_mean = mean(Age),
-                                                             age_sd = sd(Age),
-                                                             PANAS_1_positive_mean = mean(PANAS_1_positive, na.rm=TRUE),
-                                                             PANAS_1_positive_sd = sd(PANAS_1_positive, na.rm=TRUE),
-                                                             PANAS_2_positive_mean = mean(PANAS_2_positive, na.rm=TRUE),
-                                                             PANAS_2_positive_sd = sd(PANAS_2_positive, na.rm=TRUE),
-                                                             PANAS_1_negative_mean = mean(PANAS_1_negative, na.rm=TRUE),
-                                                             PANAS_1_negative_sd = sd(PANAS_1_negative, na.rm=TRUE),
-                                                             PANAS_2_negative_mean = mean(PANAS_2_negative, na.rm=TRUE),
-                                                             PANAS_2_negative_sd = sd(PANAS_2_negative, na.rm=TRUE)) 
+fit_model_serum <- readRDS("Stan Model Results/M_new_serum.rds")
 
-# dataset_chars %>% View()
-mod1 <- lm(sess_w_rstan ~ sess_beta1_rstan, data = data_group)
-summary(mod1)
-mod1 <- lm(beta1_t0_rstan ~ w_t0_rstan, data = data_group)
-summary(mod1)
-mod1 <- lm(w_rstan ~ beta1_rstan, data = data_group)
-summary(mod1)
+data_group_serum = data_group %>% filter(serum_pla != -1)
+data_group_serum = data_group_serum[order(data_group_serum$s),] 
+data_group_serum$beta1_t0_rstan <- get_posterior_mean(fit_model_serum, pars=c('beta1_t0'))[,5]
+data_group_serum$w_t0_rstan <- get_posterior_mean(fit_model_serum, pars=c('w_t0'))[,5]
+data_group_serum$g_t0_rstan <- get_posterior_mean(fit_model_serum, pars=c('g_t0'))[,5]
 
-g <- ggplot(data = data_group, aes(x=w_rstan, y = beta1_rstan, colour = comt_f)) +
-  geom_point() +
-  geom_smooth(method=lm , color="red", se=TRUE)+ # + xlab("Earn")+ ylab("w") + 
-  theme_Publication() #+ 
-# theme(axis.text.x = element_text(face="bold", size=15),axis.text.y = element_text(face="bold", size=15) ,axis.title=element_text(size=30,face="bold"))
-g + facet_wrap(~drug)
+data_group_serum$beta1_rstan <- get_posterior_mean(fit_model_serum, pars=c('beta1'))[,5]
+data_group_serum$w_rstan <- get_posterior_mean(fit_model_serum, pars=c('w'))[,5]
+data_group_serum$g_rstan <- get_posterior_mean(fit_model_serum, pars=c('g'))[,5]
 
+data_group_serum$sess_beta1_rstan <- get_posterior_mean(fit_model_serum, pars=c('sess_beta1'))[,5]
+data_group_serum$sess_w_rstan <- get_posterior_mean(fit_model_serum, pars=c('sess_w'))[,5]
+data_group_serum$sess_g_rstan <- get_posterior_mean(fit_model_serum, pars=c('sess_g'))[,5]
+
+rel_height = 0.8
+g_w_s  <- ggplot(data = data_group_serum %>% filter(serum_pla %in% c(0,1,2)) %>% mutate(serum_pla = as.factor(serum_pla)), aes(x = serum_pla, y = sess_w_rstan))+  # group = ID, linetype = Genotype)) 
+  geom_boxplot(aes(fill = serum_pla, group = serum_pla), width=0.5, color="black", alpha=0.9, outlier.shape=NA)+
+  geom_point(aes(fill = serum_pla), alpha = 0.3, position = position_jitterdodge(dodge.width= 0.9, jitter.width = jw_par), shape = 21, colour = "black", size = 2, stroke =1) +  
+  theme_Publication()+
+  scale_fill_manual(values = c("#619cff", "#aa3300","#ff3300"))+
+  theme(legend.position = "none", 
+        plot.subtitle = element_text(size = rel(rel_height), hjust = 0),
+        axis.line = element_line(colour = "black"), 
+        axis.ticks.x = element_blank(), 
+        axis.title.x = element_blank(), 
+        axis.text.x = element_text(size = 15)) + 
+  ylab(paste0("\u0394", "\U1D714", "'")) + labs(subtitle = "Model-based/model-free weight")+
+  scale_x_discrete(labels =c("Pla","Ami\nlow\nserum", "Ami\nhigh\nserum" ))
 
 
-mod1 <- lm(sess_w_rstan ~ comt, data = data_temp_gen)
-summary(mod1)
+g_b_s  <- ggplot(data = data_group_serum %>% filter(serum_pla %in% c(0,1,2)) %>% mutate(serum_pla = as.factor(serum_pla)), aes(x = serum_pla, y = sess_beta1_rstan))+  # group = ID, linetype = Genotype)) 
+  geom_boxplot(aes(fill = serum_pla, group = serum_pla), width=0.5, color="black", alpha=0.9, outlier.shape=NA)+
+  geom_point(aes(fill = serum_pla), alpha = 0.3, position = position_jitterdodge(dodge.width= 0.9, jitter.width = jw_par), shape = 21, colour = "black", size = 2, stroke =1) +  
+  theme_Publication()+
+  scale_fill_manual(values = c("#619cff", "#aa3300","#ff3300"))+
+  theme(legend.position = "none", 
+        plot.subtitle = element_text(size = rel(rel_height), hjust = 0),
+        axis.line = element_line(colour = "black"), 
+        axis.ticks.x = element_blank(), 
+        axis.title.x = element_blank(), 
+        axis.text.x = element_text(size = 15)) + 
+  ylab(paste0("\u0394", "\U1D702", "'"))  + labs(subtitle = "Inverse temperature")+ 
+  scale_x_discrete(labels =c("Pla","Ami\nlow\nserum", "Ami\nhigh\nserum" ))
 
-contrasts(data_group$ankk)<- c(-0.5,0.5)
-contrasts(data_group$dat1)<- c(-0.5,0.5)
-contrasts(data_group$darpp)<- c(-0.5,0.5)
-data_group$comt_c <- data_group$comt %>% ave(FUN = scale)
-
-mod1 <- lm(sess_w_rstan ~ (ankk + comt_c + dat1 + darpp)*(ami_dummy + nal_dummy), data = data_group)
-summary(mod1)
-
-mod1 <- lm(sess_beta1_rstan ~ (ankk + comt_c + dat1 + darpp)*(ami_dummy + nal_dummy), data = data_group)
-summary(mod1)
-
-mod1 <- lm(Age ~ drug, data = data_group)
+g_w_s + g_b_s
 
 
 
+
+# glimpse results
+
+print(comp_data)
+stan_plot(fit_model_serum, pars_all)
+pars_all <- grep("^beta", names(fit_model_serum), value = T)
+pars_all <- pars_all[1:9]
+
+
+Par_extract = rstan::extract(fit_model_serum, pars = c(pars_all, 'sigma'))
+
+# in parameter estimation space:
+
+w_ami_low_serum <- Par_extract$beta_ami
+w_ami_low_serum %>% sf(1)
+
+w_ami_high_serum <- Par_extract$beta_ami + Par_extract$beta_serum_ami_high
+w_ami_high_serum %>% sf(1)
+
+
+w_ami_diff_serum <- Par_extract$beta_serum_ami_high
+w_ami_diff_serum%>% sf(1)
+
+
+b_ami_low_serum <- Par_extract$beta_ami_noise
+b_ami_low_serum %>% sf(1)
+
+b_ami_high_serum <- Par_extract$beta_ami_noise  + Par_extract$beta_serum_ami_high_noise
+b_ami_high_serum %>% sf(1)
+
+b_ami_diff_serum <-  Par_extract$beta_serum_ami_high_noise
+b_ami_diff_serum%>% sf(1)
+
+
+# effect sizes  
+sd_w_ses =  Par_extract$sigma[5]
+sd_w =  Par_extract$sigma[2]
+
+sd_b_ses =  Par_extract$sigma[4]
+sd_b =  Par_extract$sigma[1]
+
+sd_g_ses =  Par_extract$sigma[6]
+sd_g =  Par_extract$sigma[3]
+
+d_w_ami_low_serum <- (w_ami_low_serum/sqrt(sd_w_ses^2 + sd_w^2))  
+d_w_ami_low_serum %>% sf(1)
+d_w_ami_high_serum <- (w_ami_high_serum/sqrt(sd_w_ses^2 + sd_w^2))  
+d_w_ami_high_serum %>% sf(1)
+d_w_ami_diff_serum <- (w_ami_diff_serum/sqrt(sd_w_ses^2 + sd_w^2))  
+d_w_ami_diff_serum%>% sf(1)
+d_b_ami_low_serum <- (b_ami_low_serum/sqrt(sd_b_ses^2 + sd_b^2))  
+d_b_ami_low_serum%>%  sf(1)
+d_b_ami_high_serum <- (b_ami_high_serum/sqrt(sd_b_ses^2 + sd_b^2))  
+d_b_ami_high_serum%>% sf(1)
+d_b_ami_diff_serum <- (b_ami_diff_serum/sqrt(sd_b_ses^2 + sd_b^2))  
+d_b_ami_diff_serum%>%  sf(1)
+
+
+temp_mat <- bind_cols(B =  d_b_ami_diff_serum,
+                      C =  d_b_ami_high_serum,
+                      D =  d_b_ami_low_serum)
+
+
+g_stats_serum_b <- temp_mat %>% 
+  # convert them to the long format, group, and get the posterior summaries
+  pivot_longer(everything()) %>%
+  group_by(name) %>% 
+  summarise(mean = mean(value),
+            ll   = quantile(value, prob = .025),
+            ul   = quantile(value, prob = .975),
+            lls   = quantile(value, prob = .10),
+            uls   = quantile(value, prob = .90)) %>%  # since the `key` variable is really two variables in one, here we split them up
+  
+  
+  # plot!
+  ggplot(aes(x = mean, xmin = ll, xmax = ul, y = name)) +
+  geom_errorbar(aes(xmin = lls, xmax = uls), size = 1.5,color = "firebrick", width = 0)+
+  geom_vline(xintercept = 0,  linetype = "dashed") +
+  geom_pointrange(color = "firebrick") +
+  labs( y = NULL) + # subtitle = "Effect sizes (95% and 50% quantiles)",
+  theme_Publication(base_size = 15) +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(size=12),
+        strip.background = element_rect(fill = "transparent", color = "transparent")) +xlab("Effect sizes")+
+  scale_y_discrete(labels = rev(c("Ami low serum \U1D702","Ami high serum \U1D702","Ami high - low serum \U1D702")))
+
+temp_mat <- bind_cols(E =  d_w_ami_diff_serum,
+                      F =  d_w_ami_high_serum,
+                      G =  d_w_ami_low_serum)
+
+
+g_stats_serum_w <- temp_mat %>% 
+  # convert them to the long format, group, and get the posterior summaries
+  pivot_longer(everything()) %>%
+  group_by(name) %>% 
+  summarise(mean = mean(value),
+            ll   = quantile(value, prob = .025),
+            ul   = quantile(value, prob = .975),
+            lls   = quantile(value, prob = .10),
+            uls   = quantile(value, prob = .90)) %>%  # since the `key` variable is really two variables in one, here we split them up
+  
+  
+  # plot!
+  ggplot(aes(x = mean, xmin = ll, xmax = ul, y = name)) +
+  geom_errorbar(aes(xmin = lls, xmax = uls), size = 1.5,color = "firebrick", width = 0)+
+  geom_vline(xintercept = 0,  linetype = "dashed") +
+  geom_pointrange(color = "firebrick") +
+  labs( y = NULL) + # subtitle = "Effect sizes (95% and 50% quantiles)",
+  theme_Publication(base_size = 15) +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(size=12),
+        strip.background = element_rect(fill = "transparent", color = "transparent")) +xlab("Effect sizes")+
+  scale_y_discrete(labels = rev(c("Ami low serum \U1D714","Ami high serum \U1D714","Ami high - low serum \U1D714")))
+
+
+g_fig_5 <- plot_grid(g_w_s, g_b_s, g_stats_serum_w, g_stats_serum_b, ncol = 2 ,rel_heights = c(1,0.5), labels = c("a", "b"))
+
+
+
+
+## model with stickiness parameters -----
+
+# M1 model + stickiness parameters (with serum)
+fit_model_sticky <- readRDS("Stan Model Results/M_new_sticky_serum.rds")
+
+# compare m1 and m1-sticky ----
+loo.fit_model_sticky <- loo::loo(fit_model_sticky)
+loo.fit_model <- loo::loo(fit_model)
+cdata <- loo_compare(loo.fit_model_sticky, loo.fit_model)
+
+cData <- as.data.frame(cdata)
+cData <- cData%>% mutate(model = c(1,2))
+saveRDS(cData, file = "model_comparison_sticky.rds")
+
+
+cData<- readRDS("model_comparison_sticky.rds")
+g_compare_models <- ggplot(cData, aes(x = model, y =  elpd_diff)) +  
+  
+  
+  geom_errorbar(aes(ymin= elpd_diff - se_diff, ymax = elpd_diff+se_diff), width = 0.2, position = position_dodge(0.9)) + theme_Publication() +
+  geom_bar(position = position_dodge(), stat = "identity") +  scale_x_discrete(name="", limits = c("M1", "M1 - sticky")) + 
+  
+  ylab("Comparing expected\nlog predictive density")
+
+
+
+fit_model <- readRDS("Stan Model Results/M_sticky_serum.rds")
+
+
+Par_extract = rstan::extract(fit_model, pars = c(pars_all, 'sigma'))
+
+# in parameter estimation space:
+
+w_ami_low_serum <- Par_extract$beta_ami
+w_ami_low_serum %>% sf(1)
+
+w_ami_high_serum <- Par_extract$beta_ami + Par_extract$beta_serum_ami_high
+w_ami_high_serum %>% sf(1)
+
+w_ami_diff_serum <- Par_extract$beta_serum_ami_high 
+w_ami_diff_serum %>% sf(1)
+
+w_nal <- Par_extract$beta_nal 
+w_nal %>% sf(1)
+
+g_ami <- Par_extract$beta_ami_g
+g_nal <- Par_extract$beta_nal_g
+
+b_ami_low_serum_noise <- Par_extract$beta_ami_noise
+b_ami_low_serum_noise %>% sf(1)
+
+b_ami_high_serum_noise <- Par_extract$beta_ami_noise  + Par_extract$beta_serum_ami_high_noise
+b_ami_high_serum_noise %>% sf(1)
+
+b_ami_diff_serum <- Par_extract$beta_serum_ami_high_noise
+b_ami_diff_serum%>% sf(1)
+
+rho_ami_low_serum <- Par_extract$beta_ami_rho
+rho_ami_low_serum_rho %>% sf(1)
+
+rho_ami_high_serum <- Par_extract$beta_ami_rho  + Par_extract$beta_serum_ami_high_rho
+rho_ami_high_serum %>% sf(1)
+
+rho_ami_diff_serum <- Par_extract$beta_serum_ami_high_rho
+rho_ami_diff_serum %>% sf(1)
+
+pi_ami_low_serum <- Par_extract$beta_ami_pi
+pi_ami_low_serum %>% sf(1)
+
+pi_ami_high_serum <- Par_extract$beta_ami_pi  + Par_extract$beta_serum_ami_high_pi
+pi_ami_high_serum %>% sf(1)
+
+pi_ami_diff_serum <- Par_extract$beta_serum_ami_high_pi
+pi_ami_diff_serum %>% sf(1)
+
+
+
+
+b_nal <- Par_extract$beta_nal_noise
+
+# effect sizes  
+sd_w_ses =  Par_extract$sigma[5]
+sd_w =  Par_extract$sigma[2]
+
+sd_b_ses =  Par_extract$sigma[4]
+sd_b =  Par_extract$sigma[1]
+
+sd_g_ses =  Par_extract$sigma[6]
+sd_g =  Par_extract$sigma[3]
+
+sd_rho_ses =  Par_extract$sigma[7]
+sd_rho =  Par_extract$sigma[8]
+
+sd_pi_ses =  Par_extract$sigma[9]
+sd_pi =  Par_extract$sigma[10]
+
+d_w_ami_low_serum <- (w_ami_low_serum/sqrt(sd_w_ses^2 + sd_w^2))  
+d_w_ami_low_serum %>% sf(1)
+d_w_ami_high_serum <- (w_ami_high_serum/sqrt(sd_w_ses^2 + sd_w^2))  
+d_w_ami_high_serum %>% sf(1)
+d_w_ami_diff_serum <- (w_ami_diff_serum/sqrt(sd_w_ses^2 + sd_w^2))  
+d_w_ami_diff_serum%>% sf(1)
+d_b_ami_low_serum <- (b_ami_low_serum/sqrt(sd_b_ses^2 + sd_b^2))  
+d_b_ami_low_serum%>%  sf(1)
+d_b_ami_high_serum <- (b_ami_high_serum/sqrt(sd_b_ses^2 + sd_b^2))  
+d_b_ami_high_serum%>% sf(1)
+d_b_ami_diff_serum <- (b_ami_diff_serum/sqrt(sd_b_ses^2 + sd_b^2))  
+d_b_ami_diff_serum%>%  sf(1)
+
+d_rho_ami_low_serum <- (rho_ami_low_serum/sqrt(sd_rho_ses^2 + sd_b^2))  
+d_rho_ami_low_serum%>%  sf(1)
+d_rho_ami_high_serum <- (rho_ami_high_serum/sqrt(sd_rho_ses^2 + sd_b^2))  
+d_rho_ami_high_serum%>% sf(1)
+d_rho_ami_diff_serum <- (rho_ami_diff_serum/sqrt(sd_rho_ses^2 + sd_b^2))  
+d_rho_ami_diff_serum%>%  sf(1)
+
+d_pi_ami_low_serum <- (pi_ami_low_serum/sqrt(sd_pi_ses^2 + sd_b^2))  
+d_pi_ami_low_serum%>%  sf(1)
+d_pi_ami_high_serum <- (pi_ami_high_serum/sqrt(sd_pi_ses^2 + sd_b^2))  
+d_pi_ami_high_serum%>% sf(1)
+d_pi_ami_diff_serum <- (pi_ami_diff_serum/sqrt(sd_pi_ses^2 + sd_b^2))  
+d_pi_ami_diff_serum%>%  sf(1)
+
+# collect in a matrix, using letters to sort the columns as I want
+temp_mat <- bind_cols(J =  d_w_ami_diff_serum,
+                      K =  d_w_ami_high_serum,
+                      L =  d_w_ami_low_serum,
+                      G =  d_b_ami_diff_serum,
+                      H =  d_b_ami_high_serum,
+                      I =  d_b_ami_low_serum,
+                      D =  d_rho_ami_diff_serum,
+                      E =  d_rho_ami_high_serum,
+                      F =  d_rho_ami_low_serum,
+                      A =  d_pi_ami_diff_serum,
+                      B =  d_pi_ami_high_serum,
+                      C =  d_pi_ami_low_serum)
+
+
+g_stats_serum_sticky <- temp_mat %>% 
+  # convert them to the long format, group, and get the posterior summaries
+  pivot_longer(everything()) %>%
+  group_by(name) %>% 
+  summarise(mean = mean(value),
+            ll   = quantile(value, prob = .025),
+            ul   = quantile(value, prob = .975),
+            lls   = quantile(value, prob = .10),
+            uls   = quantile(value, prob = .90)) %>%  # since the `key` variable is really two variables in one, here we split them up
+  
+  
+  # plot!
+  ggplot(aes(x = mean, xmin = ll, xmax = ul, y = name)) +
+  geom_errorbar(aes(xmin = lls, xmax = uls), size = 1.5,color = "firebrick", width = 0)+
+  geom_vline(xintercept = 0,  linetype = "dashed") +
+  geom_pointrange(color = "firebrick") +
+  labs( y = NULL) + # subtitle = "Effect sizes (95% and 50% quantiles)",
+  theme_Publication(base_size = 15) +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(size=12),
+        strip.background = element_rect(fill = "transparent", color = "transparent")) +xlab("Effect sizes")+
+  scale_y_discrete(labels = rev(c("Ami low serum \U1D714","Ami high serum \U1D714","Ami low - high serum \U1D714",
+                                  "Ami low serum \U1D702","Ami high serum \U1D702","Ami low - high serum \U1D702",
+                                  "Ami low serum \U1D70C","Ami high serum \U1D70C","Ami low - high serum \U1D70C",
+                                  "Ami low serum \U1D70B","Ami high serum \U1D70B","Ami low - high serum \U1D70B")))
+
+
+g_stats_serum_sticky
+
+
+
+
+## mood, age, weight, serum, bmi stats -----------------------
+data_group <- data_group %>% mutate(pos_mood_diff = PANAS_2_positive - PANAS_1_positive,
+                                    neg_mood_diff = PANAS_2_negative - PANAS_1_negative)
+data_group <- data_group %>% mutate(pos_mood_diff_s = pos_mood_diff %>% ave(FUN = scale),
+                                    neg_mood_diff_s = neg_mood_diff %>% ave(FUN = scale))
+
+if (FALSE) {
+bmod_w_mood <- brm(sess_w_rstan ~ (ami_dummy + serum_ami_high + nal_dummy)*(Sex + Weight_s + Age_s)  + wm_s +  pos_mood_diff_s + neg_mood_diff_s+ PANAS_1_negative_s +PANAS_1_positive_s, 
+                 data = data_group_serum %>% filter(serum_pla %in% c(0,1,2,-2)),
+                 prior = c(set_prior("normal(0,1)", class = "b")),
+                 warmup = 500, iter = 2000, chain = 4)
+
+saveRDS(bmod_w_mood, file = "bmod_w_mood.rds")
+bmod_w_mood %>%  fixef() %>% round(2) %>%  write.csv(file = "Beh_w_mood.csv")
+}
+bmod_w_mood <- readRDS("bmod_w_mood.rds")
+post_mod <- posterior_samples(bmod_w_mood) #  pars = c("^b_")
+
+bmod_w_mood %>% summary()
+
+if (FALSE) {
+bmod_eta_mood <- brm(sess_beta1_rstan ~  (ami_dummy + serum_ami_high + nal_dummy)*(Sex + Weight_s + Age_s)  + wm_s +  pos_mood_diff_s + neg_mood_diff_s+ PANAS_1_negative_s +PANAS_1_positive_s, 
+                   data = data_group_serum %>% filter(serum_pla %in% c(0,1,2,-2)),
+                   prior = c(set_prior("normal(0,1)", class = "b")),
+                   warmup = 500, iter = 2000, chain = 4)
+
+saveRDS(bmod_eta_mood, file = "bmod_eta_mood.rds")
+bmod_eta_mood %>%  fixef() %>% round(2) %>%  write.csv(file = "Beh_eta_mood.csv")
+
+}
+bmod_eta_mood <- readRDS(file = "bmod_eta_mood.rds")
+post_mod <- posterior_samples(bmod_eta_mood) #  pars = c("^b_")
+bmod_eta_mood %>% summary()
+
+summary(bmod_eta_mood)
+if (FALSE) {
+bmod_w_genetics <- brm(sess_w_rstan ~ (ami_dummy + serum_ami_high + nal_dummy)*(ankk_c + dat1_c + comt_s + darpp_c), 
+                   data = data_group_serum %>% filter(serum_pla %in% c(0,1,2,-2)),
+                   prior = c(set_prior("normal(0,1)", class = "b")),
+                   warmup = 500, iter = 2000, chain = 4)
+
+saveRDS(bmod_w_genetics, file = "bmod_w_genetics.rds")
+bmod_w_genetics %>%  fixef() %>% round(2) %>%  write.csv(file = "bmod_w_genetics.csv")
+}
+bmod_w_genetics <- readRDS(file = "bmod_w_genetics.rds")
+summary(bmod_w_genetics)
+if (FALSE)  {
+bmod_eta_genetics <- brm(sess_beta1_rstan ~ (ami_dummy + serum_ami_high + nal_dummy)*(ankk_c + dat1_c + comt_s + darpp_c), 
+                       data = data_group_serum %>% filter(serum_pla %in% c(0,1,2,-2)),
+                       prior = c(set_prior("normal(0,1)", class = "b")),
+                       warmup = 500, iter = 2000, chain = 4)
+saveRDS(bmod_eta_genetics, file = "bmod_eta_genetics.rds")
+bmod_eta_genetics %>%  fixef() %>% round(2) %>%  write.csv(file = "bmod_eta_genetics.csv")
+
+}
+
+bmod_eta_genetics %>% summary()
+
+bmod_eta_genetics <- readRDS(file = "bmod_eta_genetics.rds")
+if (FALSE) {
+bmod_mood_drugs <- brm(pos_mood_diff_s ~ (ami_dummy + serum_ami_high + nal_dummy), 
+                         data = data_group_serum %>% filter(serum_pla %in% c(0,1,2,-2)),
+                         prior = c(set_prior("normal(0,1)", class = "b")),
+                         warmup = 500, iter = 2000, chain = 4)
+
+
+saveRDS(bmod_mood_drugs, file = "bmod_mood_drugs.rds")
+bmod_mood_drugs %>%  fixef() %>% round(2) %>%  write.csv(file = "bmod_mood.csv")
+}
+bmod_mood_drugs <- readRDS(file = "bmod_mood_drugs.rds")
+
+if (FALSE) {
+bmod_neg_mood_drugs <- brm(neg_mood_diff_s ~ (ami_dummy + serum_ami_high + nal_dummy), 
+                       data = data_group_serum %>% filter(serum_pla %in% c(0,1,2,-2)),
+                       prior = c(set_prior("normal(0,1)", class = "b")),
+                       warmup = 500, iter = 2000, chain = 4)
+
+saveRDS(bmod_neg_mood_drugs, file = "bmod_neg_mood_drugs.rds")
+bmod_neg_mood_drugs %>%  fixef() %>% round(2) %>%  write.csv(file = "bmod_neg_mood.csv")
+}
+bmod_neg_mood_drugs <- readRDS(file = "bmod_neg_mood_drugs.rds")
+
+
+# mood stats ------
 # panas stats 
 
 # dataset_chars %>% dplyr::select(starts_with("PA")) %>% round(1) %>% View()
@@ -1257,7 +1802,7 @@ dataset_panas_neg %>% glimpse()
 # if file.exists("Brms_model_panas_pos.rds")
 
 
-if (FALSE) source("Util_scripts/Run_Models_with_Mood.r") # need this to save the models (will take some time)
+if (FALSE) source("Utility scripts/Run_Models_with_Mood.r") # need this to save the models (will take some time)
 
 brms_model_panas_neg <- readRDS(file = "brms_panas_neg.rds") 
 
@@ -1277,9 +1822,9 @@ brms_model_panas_pos %>% fixef() %>% round(2) %>%  write.csv(file = "brms_model_
 
 # belief
 
-dataset %>% filter(drug == 3) %>% dplyr::select(drug, Pill_Belief_Debriefing) %>% glimpse()
-dataset <- dataset %>% mutate(placebo = (drug ==3), placebo_belief = (Pill_Belief_Debriefing ==3)) 
-dataset %>% group_by(placebo, placebo_belief) %>% summarize(N=n())
+data_group %>% filter(drug == "Ami") %>% dplyr::select(drug, Pill_Belief_Debriefing) %>% glimpse()
+data_group <- data_group %>% mutate(placebo = (drug == "Pla"), placebo_belief = (Pill_Belief_Debriefing == 3)) 
+data_group %>% group_by(drug, placebo_belief) %>% summarize(N=n())
 
 # genetic distributions 
 data_group %>% group_by(drug, comt) %>% summarize(N=n())
@@ -1289,9 +1834,8 @@ data_group %>% group_by(drug, dat1) %>% summarize(N=n())
 
 data_group %>% group_by(drug, darpp) %>% summarize(N=n())
 
-
 ## model parameters with working memory and mood ####
-model_demographics_mood_wm <-  lm(sess_w_rstan ~ nal_dummy*(PANAS_2_positive_s + PANAS_2_negative_s +PANAS_1_positive_s + PANAS_1_negative_s + wm_s + Age_s + BMI_new_s) + ami_dummy*(PANAS_2_positive_s + PANAS_2_negative_s +PANAS_1_positive_s + PANAS_1_negative_s + wm_s+ Age_s + BMI_new_s), data = data_group, na.action = na.exclude)
+model_demographics_mood_wm <-  lm(sess_w_rstan ~ (nal_dummy + ami_dummy)*(PANAS_2_positive_s + PANAS_2_negative_s +PANAS_1_positive_s + PANAS_1_negative_s + wm_s + Age_s + BMI_new_s) + ami_dummy*(PANAS_2_positive_s + PANAS_2_negative_s +PANAS_1_positive_s + PANAS_1_negative_s + wm_s+ Age_s + BMI_new_s), data = data_group, na.action = na.exclude)
 model_demographics_mood_wm <-  lm(sess_w_rstan ~ nal_dummy*(wm_s + Age_s + BMI_new_s) + ami_dummy*(wm_s+ Age_s + BMI_new_s), data = data_group, na.action = na.exclude)
 
 model_demographics_mood_wm <-  lm(earn_diff ~ nal_dummy*(PANAS_2_positive_s + PANAS_2_negative_s +PANAS_1_positive_s + PANAS_1_negative_s + wm_s + Age_s + BMI_new_s) + ami_dummy*(PANAS_2_positive_s + PANAS_2_negative_s +PANAS_1_positive_s + PANAS_1_negative_s + wm_s+ Age_s + BMI_new_s), data = data_group, na.action = na.exclude)
@@ -1314,6 +1858,8 @@ w_mood_demo_model %>% summary()
 w_mood_demo_model2 %>% fixef() %>% round(3)  %>%   write.csv("w_mood_demo_model2.csv")
 w_mood_demo_model <- readRDS("w_mood_demo_model2.rds")
 w_mood_demo_model %>% summary()
+
+
 ## refitting model parameters ------------------
 source("Util_scripts/refit_model.r") 
 savedataset = "Refit_winning_model_pars_all.rds"
@@ -1417,32 +1963,57 @@ g_rf_loggam<- ggplot(data =drf_temp, aes(x= loggam, y = loggam_rf)) +
   labs(title=paste("corr = ", round(cor.test(drf_temp$loggam,drf_temp$loggam_rf)[["estimate"]],2), sep=""))
 plot_grid(g_rf_om_mean, g_rf_noise, g_rf_mu0,g_rf_loggam, ncol = 4)
 
+# wm and drug effects #######################################################
+
+data_group_wm <- data_group  %>%
+  filter(!is.na(wm))
+g2 <- ggplot(data = data_group_wm, aes(x = drug, y = wm))  # group = ID, linetype = Genotype)) 
+g2 <- g2+          geom_violin(aes(fill = drug))
+g2 <- g2+ geom_boxplot(aes(fill = drug), width=1, color="grey", alpha=0.5)
+g2 <- g2+         geom_jitter() + theme(legend.position="none")
+g2
+
+if(!file.exists("brms_wm.rds")) {
+  brms_wm <- brm(wm ~ nal_dummy + ami_dummy,
+                 data = data_group_wm,
+                 family = gaussian,
+                 prior = c(set_prior("normal(0,3)", class = "b")),
+                 warmup = 500, iter = 2000, chains = 4)
+  saveRDS(brms_wm, file ="brms_wm.rds")
+}
+summary(brms_wm)
+mcmc_plot(brms_wm)
+
 #############################################################################################################
 # Computational modelling with genetic data #################################################################
 # get genetics model stats ------------------------------------------------
 
-
+# note that these are not included to the same degree in the revised manuscript
 
 if (FALSE) { # this will take some time
-  run_model_fit(modelfile = "Stan Scripts/M_new_gen.stan", "Stan Model Results/M_new.rds") }
-fit_model_gen <- readRDS("Stan Model Results/M_new_gen.rds")
+  run_model_fit(modelfile = "Stan Scripts/M_new_gen.stan", "Stan Model Results/M_new.rds") 
+  data_temp_gen <- data_group  %>%
+    filter(!is.na(dat1))
+  # data_temp_gen %>% group_by(drug, comt) %>% summarize(N=n()) %>% View()
+  
+  data_temp_gen$beta1_t0_rstan <- get_posterior_mean(fit_model_gen, pars=c('beta1_t0'))[,5]
+  data_temp_gen$w_t0_rstan <- get_posterior_mean(fit_model_gen, pars=c('w_t0'))[,5]
+  data_temp_gen$g_t0_rstan <- get_posterior_mean(fit_model_gen, pars=c('g_t0'))[,5]
+  
+  data_temp_gen$beta1_rstan <- get_posterior_mean(fit_model_gen, pars=c('beta1'))[,5]
+  data_temp_gen$w_rstan <- get_posterior_mean(fit_model_gen, pars=c('w'))[,5]
+  data_temp_gen$g_rstan <- get_posterior_mean(fit_model_gen, pars=c('g'))[,5]
+  
+  data_temp_gen$sess_beta1_rstan <- get_posterior_mean(fit_model_gen, pars=c('sess_beta1'))[,5]
+  data_temp_gen$sess_w_rstan <- get_posterior_mean(fit_model_gen, pars=c('sess_w'))[,5]
+  data_temp_gen$sess_g_rstan <- get_posterior_mean(fit_model_gen, pars=c('sess_g'))[,5]
+  
+  saveRDS(data_temp_gen, file = "Data/data_group_gen.rds") 
+  }
+data_temp_gen <- readRDS(file = "Data/data_group_gen.rds") 
 
 
-data_temp_gen <- data_group  %>%
-  filter(!is.na(dat1))
-# data_temp_gen %>% group_by(drug, comt) %>% summarize(N=n()) %>% View()
 
-data_temp_gen$beta1_t0_rstan <- get_posterior_mean(fit_model_gen, pars=c('beta1_t0'))[,5]
-data_temp_gen$w_t0_rstan <- get_posterior_mean(fit_model_gen, pars=c('w_t0'))[,5]
-data_temp_gen$g_t0_rstan <- get_posterior_mean(fit_model_gen, pars=c('g_t0'))[,5]
-
-data_temp_gen$beta1_rstan <- get_posterior_mean(fit_model_gen, pars=c('beta1'))[,5]
-data_temp_gen$w_rstan <- get_posterior_mean(fit_model_gen, pars=c('w'))[,5]
-data_temp_gen$g_rstan <- get_posterior_mean(fit_model_gen, pars=c('g'))[,5]
-
-data_temp_gen$sess_beta1_rstan <- get_posterior_mean(fit_model_gen, pars=c('sess_beta1'))[,5]
-data_temp_gen$sess_w_rstan <- get_posterior_mean(fit_model_gen, pars=c('sess_w'))[,5]
-data_temp_gen$sess_g_rstan <- get_posterior_mean(fit_model_gen, pars=c('sess_g'))[,5]
 
 
 
@@ -1451,26 +2022,32 @@ data_temp_gen$sess_g_rstan <- get_posterior_mean(fit_model_gen, pars=c('sess_g')
 
 ## a part #### 
 if (!file.exists("GeneticEffectsBrms.rds")) {
-  contrasts(data_temp_gen$ankk)<- c(-0.5,0.5)
-  contrasts(data_temp_gen$dat1)<- c(-0.5,0.5)
-  contrasts(data_temp_gen$darpp)<- c(-0.5,0.5)
+  # contrasts(data_temp_gen$ankk)<- c(-0.5,0.5)
+  # contrasts(data_temp_gen$dat1)<- c(-0.5,0.5)
+  # contrasts(data_temp_gen$darpp)<- c(-0.5,0.5)
   data_temp_gen$comt_c <- data_temp_gen$comt %>% ave(FUN = scale)
   
-  
+  # data_temp_gen
   data_temp_gen <- data_temp_gen %>% mutate(sess_w_rstan_s  = ave(sess_w_rstan, FUN = scale))
   options(mc.cores = 4)
-  gen_compare_brm <- brm(data = data_temp_gen, sess_w_rstan ~ nal_dummy*(ankk + dat1 + comt_c + darpp) + ami_dummy*(ankk + dat1 + comt_c + darpp),
+  data_temp_gen$serum_ami_low = data_temp_gen$serum_pla == 1
+  gen_compare_brm <- brm(data = data_temp_gen, sess_w_rstan ~ (serum_ami_low + nal_dummy+ serum_ami_high)*(ankk_c + dat1_c + comt_c + darpp_c),
                          prior = c(set_prior("normal(0,1)", class = "b"),
                                    set_prior("cauchy(0,2)", class = "sigma")),
                          warmup = 1000, iter = 3000, chains = 4)
-
-  saveRDS(gen_compare_brm, file = "GeneticEffectsBrms.rds")
+  
+  gen_compare_brm_beta <- brm(data = data_temp_gen, sess_beta1_rstan ~ (serum_ami_low + nal_dummy+ serum_ami_high)*(ankk_c + dat1_c + comt_c + darpp_c),
+                         prior = c(set_prior("normal(0,1)", class = "b"),
+                                   set_prior("cauchy(0,2)", class = "sigma")),
+                         warmup = 1000, iter = 3000, chains = 4)
+  saveRDS(gen_compare_brm, file = "GeneticEffectsBrms_serum.rds")
   
 } else {
   gen_compare_brm <- readRDS(file = "GeneticEffectsBrms.rds")
 }
 gen_compare_brm %>% summary
-
+gen_compare_brm_beta  %>% summary
+GeneticEffectsBrms %>% summary
 
 
 names_order <- fixef(gen_compare_brm) %>% rownames()
@@ -2058,28 +2635,7 @@ g_gen <- plot_grid(g_gen_nal,g_gen_ami, rel_widths = c(2,1))
 
 plot_effect2(data_ami_comt)
 plot_grid( g1, g2, nrow = 2, rel_heights = c(1,1))
-# wm and drug effects #######################################################
 
-
-
-data_group_wm <- data_group  %>%
-  filter(!is.na(wm))
-g2 <- ggplot(data = data_group_wm, aes(x = drug, y = wm))  # group = ID, linetype = Genotype)) 
-g2 <- g2+          geom_violin(aes(fill = drug))
-g2 <- g2+ geom_boxplot(aes(fill = drug), width=1, color="grey", alpha=0.5)
-g2 <- g2+         geom_jitter() + theme(legend.position="none")
-g2
-
-if(!file.exists("brms_wm.rds")) {
-  brms_wm <- brm(wm ~ nal_dummy + ami_dummy,
-                 data = data_group_wm,
-                 family = gaussian,
-                 prior = c(set_prior("normal(0,3)", class = "b")),
-                 warmup = 500, iter = 2000, chains = 4)
-  saveRDS(brms_wm, file ="brms_wm.rds")
-}
-summary(brms_wm)
-mcmc_plot(brms_wm)
 
 
 

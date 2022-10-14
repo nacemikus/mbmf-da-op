@@ -16,11 +16,11 @@ sf <- function(x, pub = 0, prob_vect = c(0.5,0.025,0.975), dec_no = 3) {
   y[[4]] <- mean(x<0) %>% round(3)
   names(y)[4] <- "p"
   p_val = y[[4]];
-  if (y[[4]] > 0.5) p_val = 1 - p_val
+  if (y[[4]] > 0.5) y[[4]] = 1 - y[[4]]
   
   if (y[[1]] < 0) {
-    y_text = paste("b = ", y[[1]], ", 95% CrI [",y[[2]], ", ",y[[3]], "], P(x>0) = ",p_val, sep ="")
-  } else   y_text = paste("b = ", y[[1]], ", 95% CrI [",y[[2]], ", ",y[[3]], "], P(x<0) = ",p_val, sep ="")
+    y_text = paste("b = ", y[[1]], ", 95% CrI [",y[[2]], ", ",y[[3]], "], P(b>0) = ",y[[4]], sep ="")
+  } else   y_text = paste("b = ", y[[1]], ", 95% CrI [",y[[2]], ", ",y[[3]], "], P(b<0) = ",y[[4]], sep ="")
   
   if (pub == 0) {
     return(y)

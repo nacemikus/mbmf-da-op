@@ -22,14 +22,14 @@ run_model_fit <- function(modelfile, savemodelname, InfType = "Sampling") {
  
   
    ### load data
-  data_temp <- readRDS("Data/data_beh.rds")
-  data_group <- readRDS("Data/data_group.rds")
-  data_temp <- merge(data_temp, data_group %>% select(Sex, Weight_s, pos_mood_diff_s, PANAS_1_positive_s, PANAS_1_negative_s, neg_mood_diff_s, wm_s, s), by = "s")
-  data_temp%>% glimpse()
+  data_temp <- readRDS("Data/data_beh_t1.rds")
+  data_group <- readRDS("Data/data_group_t1.rds")
+  # data_temp <- merge(data_temp, data_group %>% select(Sex, Weight_s, pos_mood_diff_s, PANAS_1_positive_s, PANAS_1_negative_s, neg_mood_diff_s, wm_s, s), by = "s")
+  # data_temp%>% glimpse()
   
-  data_temp_t0 <- data_temp %>% filter(session == 1)
+  
   data_temp <- data_temp %>% filter(session == 2)
-  comt <- data_temp$comt[data_temp$trials==9]
+  # comt <- data_temp$comt[data_temp$trials==9]
   serum_f <-  data_temp$serum_f[data_temp$trials==9]
     drug<-  data_temp$drug[data_temp$trials==9]
   subjList <- unique(data_temp$s)
@@ -40,7 +40,7 @@ run_model_fit <- function(modelfile, savemodelname, InfType = "Sampling") {
     
     ### remove subjects with no genetic data
     data_temp <- data_temp[data_temp$s %in% subjList,  ]
-    data_temp_t0 <- data_temp_t0[data_temp_t0$s %in% subjList,  ]
+    
     print("removed sub with no genetic data")
   }
   if (use_serum == 1) {
@@ -49,7 +49,7 @@ run_model_fit <- function(modelfile, savemodelname, InfType = "Sampling") {
     
     ### remove subjects with no genetic data
     data_temp <- data_temp[data_temp$s %in% subjList,  ]
-    data_temp_t0 <- data_temp_t0[data_temp_t0$s %in% subjList,  ]
+    
     print("removed ami sub with no serum data")
   }
   ankk <- data_temp$ankk[data_temp$trials==9]
@@ -59,7 +59,7 @@ run_model_fit <- function(modelfile, savemodelname, InfType = "Sampling") {
   
   
   subjList <- unique(data_temp$s)
-  subjList_t0<- unique(data_temp_t0$s[data_temp_t0$trials != -1])
+  # subjList_t0<- unique(data_temp_t0$s[data_temp_t0$trials != -1])
   
   # center genetic variables
   dat<- data_temp$dat[data_temp$trials==9]
@@ -90,13 +90,13 @@ run_model_fit <- function(modelfile, savemodelname, InfType = "Sampling") {
     Tsubj[ss] <- length(data_temp$trials[data_temp$s == subjList[ss]]);
   }
   
-  Tsubj_t0 <- as.vector(rep(0, numSub))
-  for (ss in 1:numSub) {
-    Tsubj_t0[ss] <- length(data_temp_t0$trials[data_temp_t0$s == subjList[ss]]);
-    if (Tsubj_t0[ss]==-1) {
-      Tsubj_t0[ss] =1
-    }
-  }
+  # Tsubj_t0 <- as.vector(rep(0, numSub))
+  # for (ss in 1:numSub) {
+  #   Tsubj_t0[ss] <- length(data_temp_t0$trials[data_temp_t0$s == subjList[ss]]);
+  #   if (Tsubj_t0[ss]==-1) {
+  #     Tsubj_t0[ss] =1
+  #   }
+  # }
   maxTrials <- 200 # max(Tsubj)
   
   level1_choice <- array(1,c(numSub, maxTrials))
@@ -104,12 +104,12 @@ run_model_fit <- function(modelfile, savemodelname, InfType = "Sampling") {
   reward <- array(1,c(numSub, maxTrials))
   state1 <- array(1,c(numSub, maxTrials))
   state2 <-array(1,c(numSub, maxTrials))
-  level1_choice_t0 <- array(1,c(numSub, maxTrials))
-  stim_left_t0 <- array(1,c(numSub, maxTrials))
-  reward_t0 <- array(1,c(numSub, maxTrials))
-  state1_t0 <- array(1,c(numSub, maxTrials))
-  state2_t0 <-array(1,c(numSub, maxTrials))
-  
+  # level1_choice_t0 <- array(1,c(numSub, maxTrials))
+  # stim_left_t0 <- array(1,c(numSub, maxTrials))
+  # reward_t0 <- array(1,c(numSub, maxTrials))
+  # state1_t0 <- array(1,c(numSub, maxTrials))
+  # state2_t0 <-array(1,c(numSub, maxTrials))
+  # 
   for (i in 1:numSub) {
     tmp <- subset(data_temp, data_temp$s==subjList[i])
     level1_choice[i,1:Tsubj[i]] = tmp$choice
@@ -117,12 +117,12 @@ run_model_fit <- function(modelfile, savemodelname, InfType = "Sampling") {
     reward[i,1:Tsubj[i]] = tmp$points
     state1[i,1:Tsubj[i]] = tmp$s1
     state2[i,1:Tsubj[i]] = tmp$s2
-    tmp <- subset(data_temp_t0, data_temp_t0$s==subjList[i])
-    level1_choice_t0[i,1:Tsubj_t0[i]] = tmp$choice
-    stim_left_t0[i,1:Tsubj_t0[i]] = tmp$stim_left
-    reward_t0[i,1:Tsubj_t0[i]] = tmp$points
-    state1_t0[i,1:Tsubj_t0[i]] = tmp$s1
-    state2_t0[i,1:Tsubj_t0[i]] = tmp$s2
+    # tmp <- subset(data_temp_t0, data_temp_t0$s==subjList[i])
+    # level1_choice_t0[i,1:Tsubj_t0[i]] = tmp$choice
+    # stim_left_t0[i,1:Tsubj_t0[i]] = tmp$stim_left
+    # reward_t0[i,1:Tsubj_t0[i]] = tmp$points
+    # state1_t0[i,1:Tsubj_t0[i]] = tmp$s1
+    # state2_t0[i,1:Tsubj_t0[i]] = tmp$s2
   }
   
   
@@ -141,10 +141,8 @@ run_model_fit <- function(modelfile, savemodelname, InfType = "Sampling") {
  
   serum_ami_high<- as.numeric(data_temp_drug$serum_ami_high)
   
-  dataList <- list(N = numSub, T = maxTrials, Tsubj = Tsubj, Tsubj_t0=Tsubj_t0, level1_choice = level1_choice, stim_left = stim_left,
+  dataList <- list(N = numSub, T = maxTrials, Tsubj = Tsubj, level1_choice = level1_choice, stim_left = stim_left,
                    reward = reward, state1 = state1, state2 = state2,
-                   level1_choice_t0 = level1_choice_t0,stim_left_t0 = stim_left_t0,
-                   reward_t0 = reward_t0, state1_t0 = state1_t0, state2_t0 = state2_t0,
                    naltrexone= naltrexone, amisulpride= amisulpride,
                    comt = comt, dat=dat, ankk =ankk, darpp = darpp, serum_ami_high = serum_ami_high)
   
