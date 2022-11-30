@@ -38,8 +38,8 @@ source("Utility scripts/run_stan_models_function.r")
 # load data ---------------------------------------------------------------
 
 
-data_group<- readRDS("/Data/data_group.rds")
-data_beh <- readRDS("/Data/data_beh.rds")
+data_group<- readRDS("Data/data_group.rds")
+data_beh <- readRDS("Data/data_beh.rds")
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = 4)
@@ -72,170 +72,6 @@ if (FALSE) { # this might take long to run
     
   }
 }
-
-# playaround  to double check----- 
-fit_model_beh <- readRDS("Brms_stay_beh_rew_level.rds")
-post_sam <- posterior_samples(fit_model_beh, pars = c("^b_", "sd_", "sigma"))
-(post_sam$`b_session2:reward_level_highTRUE:prev_state_diffdifferent:ami_dummyAmi`  +
-    post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
-
-# diff-same  rew
-(post_sam$`b_session2:reward_level_highTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:reward_level_midhighTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:reward_level_midlowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:reward_level_lowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-# same  rew
-(  post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
-
-(  post_sam$`b_session2:reward_level_midhighTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
-
-(  post_sam$`b_session2:reward_level_midlowTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
-
-(  post_sam$`b_session2:reward_level_lowTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
-
-# diff  rew
-(post_sam$`b_session2:reward_level_highTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:reward_level_midhighTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:reward_level_midhighTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +post_sam$`b_session2:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:reward_level_midlowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:reward_level_midlowTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:reward_level_lowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +  post_sam$`b_session2:reward_level_lowTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`) %>% sf()
-
-##
-
-
-
-
-(post_sam$`b_session2:reward_level_midhighTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:reward_level_midlowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:reward_level_lowTRUE:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-
-
-    
-(post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi`) %>% sf()
-  
-(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
-
-
-(post_sam$`b_session2:reward_level_midhighTRUE:prev_state_diffdifferent:ami_dummyAmi`  +
-    post_sam$`b_session2:reward_level_midhighTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
-
-(post_sam$`b_session2:reward_level_highTRUE:prev_state_diffdifferent:ami_dummyAmi`  +
-    post_sam$`b_session2:reward_level_highTRUE:ami_dummyAmi` +
-    post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi` +
-    post_sam$`b_session2:ami_dummyAmi`)%>% sf()
-
-# prev win loss: ####
-fit_model_beh3 <- readRDS("Brms_stay_beh_winloss_full.rds")
-
-# fit_model_beh3 <- readRDS("Brms_points_prevwin_beh_serum.rds")
-
-post_sam <- posterior_samples(fit_model_beh3, pars = c("^b_", "sd_", "sigma"))
-
-
-post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:ami_dummyAmi` %>% sf()
-
-(post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:ami_dummyAmi`+ post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:serum_ami_high`) %>% sf()
-
-
-(post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:ami_dummyAmi`)%>% sf()
-
-(post_sam$`b_session2:prevwinwin:ami_dummyAmi`)%>% sf()
-
-(post_sam$`b_session2:prevwinwin:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:serum_ami_high`)%>% sf()
-
-#loss only
-(post_sam$`b_session2:ami_dummyAmi`)%>% sf()
-(post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`)%>% sf()
-
-# win only diff
-(post_sam$`b_session2:ami_dummyAmi` +post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`+ post_sam$`b_session2:prevwinwin:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:ami_dummyAmi`)%>% sf()
-
-# win only same
-(post_sam$`b_session2:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:ami_dummyAmi`)%>% sf()
-
-(post_sam$`b_session2:ami_dummyAmi` + post_sam$`b_session2:prevwinwin:ami_dummyAmi`+
-post_sam$`b_session2:serum_ami_high` + post_sam$`b_session2:prevwinwin:serum_ami_high`)%>% sf()
-
-
-
-
-
-
-## prev pts points #####
-# fit_model_beh3 <- readRDS("Brms_points_beh_prevpts_full.rds")
-fit_model_beh3 <- readRDS("Brms_points_prevpoints_beh_serum.rds")
-post_sam <- posterior_samples(fit_model_beh3, pars = c("^b_", "sd_", "sigma"))
-fit_model_beh3 %>% mcmc_plot( pars = c("^b_"))
-rew_size  = 5
-
-# diff- same rew 5
-
-(rew_size*post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`+ post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`) %>% sf
-
-# high serum
-(post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` + post_sam$`b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`) %>% sf
-
-# diff rew_size 
-(rew_size*post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`  + post_sam$`b_session2:prev_state_diffdifferent:ami_dummyAmi`+ 
-    rew_size*post_sam$`b_session2:prev_points:ami_dummyAmi` + post_sam$`b_session2:ami_dummyAmi`) %>% sf()
-
-(post_sam$`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` +post_sam$`b_session2:prev_points:ami_dummyAmi` ) %>% sf
-
-
-# same rew_size 
-(rew_size*post_sam$`b_session2:prev_points:ami_dummyAmi` + post_sam$`b_session2:ami_dummyAmi`) %>% sf()
-(post_sam$`b_session2:prev_points:ami_dummyAmi` ) %>% sf()
-(post_sam$`b_session2:prev_points:ami_dummyAmi`  + post_sam$`b_session2:prev_points:serum_ami_high`) %>% sf()
-
-
-# rest ####
-# fit_model_beh2 <- readRDS("../Brms_stay_beh.rds")
-fit_model_beh3 <- readRDS("Brms_points_beh_prevpts_full.rds")
-# fit_model_beh3 <- readRDS("Brms_points_beh_winloss_Ses2.rds")
-
- 
-# reward levels #########
 
 post_sam <- posterior_samples(fit_model_beh, pars = c("^b_", "sd_", "sigma"))
 
@@ -522,34 +358,118 @@ plot_grid(plot_grid(g_same/g_different, g_same_diff/g_different_diff, nrow = 1 ,
           rel_heights = c(1,0.3), labels = c("", "c"))
 
 ## stay with amisulpride serum levels -----
-fit_model_beh_serum <- readRDS("Brms_stay_beh_serum.rds")
-post_sam <- posterior_samples(fit_model_beh_serum, pars = c("^b_", "sd_", "sigma"))
-# get the regressiors
 
-beta_mat <- post_sam %>% 
-  transmute(i_delta_pp_prevpt_ami_same_low_serum= (`b_session2:prev_points:ami_dummyAmi` ),
-            h_delta_pp_prevpt_ami_different_low_serum = (`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` +
-                                                `b_session2:prev_points:ami_dummyAmi` ),
-            g_delta_pp_prevpt_ss_ami_low_serum= `b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`,
-            f_delta_pp_prevpt_ami_same_high_serum= (`b_session2:prev_points:ami_dummyAmi` +`b_session2:prev_points:serum_ami_high`),
-            e_delta_pp_prevpt_ami_different_high_serum = (`b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi` +
-                                                           `b_session2:prev_points:ami_dummyAmi`+`b_session2:prev_points:serum_ami_high`+
-                                                            `b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`),
-            d_delta_pp_prevpt_ss_ami_high_serum= `b_session2:prev_points:prev_state_diffdifferent:ami_dummyAmi`+
-              `b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`,
-            c_delta_pp_prevpt_same_ami_serum_diff= `b_session2:prev_points:serum_ami_high`,
-            b_delta_pp_prevpt_different_ami_serum_diff=  `b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`,
-            a_delta_pp_prevpt_ss_ami_serum_diff=  `b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`+`b_session2:prev_points:serum_ami_high`
-            )
+data_beh$serum_f = data_beh$serum > 603.9999
+data_beh$serum_ami_high =  case_when( data_beh$serum >= 604 ~ 1, 
+                                      TRUE ~ 0)
+data_beh$serum_ami_low =  case_when( data_beh$serum < 604 ~ 1, 
+                                     TRUE ~ 0)
+data_beh$nal =  case_when( data_beh$nal_dummy == "Nal"~ 1, 
+                           TRUE ~ 0)
 
-# print the regressors in odds scale :
-beta_mat %>% exp() %>%  apply(2, sf) %>% t()
-# in logodds scale 
-beta_mat  %>%  apply(2, sf) %>% t()
+# data_beh %>% filter(trials == 1, session == 2,  exclude_serum == F) %>% group_by(ID) %>% summarize(serum_ami_high =serum_ami_high[1],
+#                                         serum_ami_low = serum_ami_low[1],
+#                                         serum = serum[1],
+#                                         nal = nal[1],
+#                                         drug = drug[1],
+#                                         serum_pla = serum[1]) %>% View
+data_beh$exclude_serum = data_beh$ami_dummy =="Ami" & is.na(data_beh$serum)
+data_group$exclude_serum = data_group$ami_dummy =="Ami" & is.na(data_group$serum)
+data_beh$stay_num <- as.numeric(data_beh$stay)
 
-for (col in  1 : dim(beta_mat)[2]) {
-  print(paste(colnames(beta_mat)[col], beta_mat[,col ] %>% sf(1)))
-}
+# subjList = data_group$s %>% unique()
+if(!file.exists("Brms_stay_beh_serum.rds")){
+  # if(FALSE){  
+  Brms_stay_beh_serum <- brm(stay_num|trials(1) ~ (session*prev_state_diff*prev_points|ID) + session*prev_points*prev_state_diff*(serum_ami_low + serum_ami_high+ nal),
+                       data = data_beh%>% filter( exclude_serum == F) , family = binomial(),
+                       prior = c(set_prior("cauchy(0,2)", class = "sd"),
+                                 set_prior("normal(0,3)", class = "b"),
+                                 set_prior("lkj(2)", class = "cor")),
+                       #set_prior("lkj(2)", class = "cor")),
+                       warmup = , iter =3000, chains =4,
+                       control = list(adapt_delta = 0.90))
+  
+  saveRDS(fit_model_beh, file = "Brms_stay_beh_serum.rds")
+  
+} else 
+
+Brms_stay_beh_serum <- readRDS("Brms_stay_beh_serum.rds")
+post_sam <- posterior_samples(Brms_stay_beh_serum, pars = c("^b_", "sd_", "sigma"))
+# Brms_stay_beh_serum  %>% mcmc_plot( pars = c("^b_"))
+
+
+# diff- same
+( post_sam$`b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`) %>% sf(1)
+(post_sam$`b_session2:prev_points:prev_state_diffdifferent:serum_ami_low`) %>% sf(1)
+
+(( post_sam$`b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`) -(post_sam$`b_session2:prev_points:prev_state_diffdifferent:serum_ami_low`))    %>% sf(1)
+
+# diff
+(post_sam$`b_session2:prev_points:serum_ami_high` + post_sam$`b_session2:prev_points:prev_state_diffdifferent:serum_ami_high`) %>% sf(1)
+(post_sam$`b_session2:prev_points:serum_ami_low` + post_sam$`b_session2:prev_points:prev_state_diffdifferent:serum_ami_low`) %>% sf(1)
+
+
+# same
+(post_sam$`b_session2:prev_points:serum_ami_high`) %>% sf(1)
+(post_sam$`b_session2:prev_points:serum_ami_low`) %>% sf(1)
+((post_sam$`b_session2:prev_points:serum_ami_high`) - (post_sam$`b_session2:prev_points:serum_ami_low`) )%>% sf(1)
+###
+
+data_group$serum_ami_high =  case_when( data_group$serum >= 604 ~ 1, 
+                                      TRUE ~ 0)
+data_group$serum_ami_low =  case_when( data_group$serum < 604 ~ 1, 
+                                     TRUE ~ 0)
+data_group$nal =  case_when( data_group$nal_dummy == "Nal"~ 1, 
+                           TRUE ~ 0)
+
+
+rand_eff <- Brms_stay_beh_serum %>% ranef()
+rand_eff <- rand_eff$ID # %>% glimpse
+rand_eff %>% dim
+data_group <- data_group[order(data_group$ID),]
+data_group_temp = data_group %>% filter(exclude_serum == F)
+data_group_temp %>% View
+cor.test(rand_eff[1:dim(rand_eff)[1],1,6] , data_group_temp$sess_w_rstan)
+cor.test(rand_eff[1:dim(rand_eff)[1],1,8] , data_group_temp$sess_w_rstan)
+cor.test(rand_eff[1:dim(rand_eff)[1],1,8] + rand_eff[1:dim(rand_eff)[1],1,6] , data_group_temp$sess_w_rstan)
+
+cor.test(rand_eff[1:dim(rand_eff)[1],1,6] , data_group_temp$sess_beta1_rstan)
+cor.test(rand_eff[1:dim(rand_eff)[1],1,8] , data_group_temp$sess_beta1_rstan)
+cor.test(rand_eff[1:dim(rand_eff)[1],1,8] + rand_eff[1:dim(rand_eff)[1],1,6] , data_group_temp$sess_beta1_rstan)
+
+df = tibble(slope_same = rand_eff[1:dim(rand_eff)[1],1,6] %>% ave(FUN = scale),
+            slope_different = (rand_eff[1:dim(rand_eff)[1],1,8] +rand_eff[1:dim(rand_eff)[1],1,6]) %>% ave(FUN = scale),
+            diff_in_slopes = rand_eff[1:dim(rand_eff)[1],1,8]%>% ave(FUN = scale),
+            sess_beta1_rstan = data_group_temp$sess_beta1_rstan%>% ave(FUN = scale),
+            sess_w_rstan=data_group_temp$sess_w_rstan%>% ave(FUN = scale),
+            sess_g_rstan=data_group_temp$sess_g_rstan%>% ave(FUN = scale),
+            serum = data_group_temp$serum,
+            serum_ami_low = data_group_temp$serum_ami_low)
+
+df %>% glimpse
+
+mod1 <- lm(data = df %>% filter(serum_ami_low != 1) , serum ~ slope_same)
+summary(mod1)
+mod1 <- lm(data = df %>% filter(serum_ami_low == 1) , slope_same ~serum)
+summary(mod1)
+mod1 <- lm(data = df, serum ~ slope_different)
+summary(mod1)
+
+mod1 <- lm(data = df, diff_in_slopes ~ sess_beta1_rstan + sess_w_rstan+ sess_g_rstan)
+summary(mod1)
+mod1 <- lm(data = df, slope_same ~ sess_beta1_rstan + sess_w_rstan+ sess_g_rstan)
+summary(mod1)
+
+df = tibble(slope_same = (rand_eff[1:112,1,6]+ rand_eff[1:112,1,4]) %>% ave(FUN = scale),
+            slope_different = (rand_eff[1:112,1,8] + rand_eff[1:112,1,7]+rand_eff[1:112,1,6]+ rand_eff[1:112,1,4]) %>% ave(FUN = scale),
+            diff_in_slopes = (rand_eff[1:112,1,8]+ rand_eff[1:112,1,7])%>% ave(FUN = scale),
+            beta1_rstan = data_group$beta1_rstan%>% ave(FUN = scale),
+            w_rstan=data_group$w_rstan%>% ave(FUN = scale),
+            g_rstan=data_group$g_rstan%>% ave(FUN = scale)
+)
+
+
+
 #############################################################################################################
 # Computational modelling  ########################################################################
 ## stan models were estimated using the analysis_main.r scripts and custom written stan models
