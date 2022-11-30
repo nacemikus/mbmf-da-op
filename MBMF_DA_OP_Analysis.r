@@ -5,23 +5,19 @@
 
 # load packages -----------------------------------------------------------
 
-
-# library(dplyr)
-# library(ggplot2)
 library(tidyverse)
 library(cowplot)
 library(ggthemes)
 library(nlme)
 library(brms)
-# library(tidyverse)  # ggplot, dplyr, and friends
 library(broom)
 library(loo)
 library(rstanarm)
 library(rstan)
-library(patchwork)  # Lay out multiple ggplot plots; install from https://github.com/thomasp85/patchwork
+library(patchwork)
 library(lme4)
 library(lmerTest)
-library("bayesplot")
+library(bayesplot)
 # aux functions ----
 
 source("Utility scripts/plotting_functions.r") 
@@ -37,13 +33,12 @@ source("Utility scripts/run_stan_models_function.r")
 
 # load data ---------------------------------------------------------------
 
-
 data_group<- readRDS("Data/data_group.rds")
 data_beh <- readRDS("Data/data_beh.rds")
 
+# options for stan ---------------------------------------------------------------
 rstan_options(auto_write = TRUE)
 options(mc.cores = 4)
-# 
 
 ############################################################################################################
 # Behavioral analysis ######################################################################################  
@@ -357,7 +352,7 @@ plot_grid(plot_grid(g_same/g_different, g_same_diff/g_different_diff, nrow = 1 ,
           nrow = 2,
           rel_heights = c(1,0.3), labels = c("", "c"))
 
-## stay with amisulpride serum levels -----
+## stay with amisulpride serum levels ------------------------------------------------------
 
 data_beh$serum_f = data_beh$serum > 603.9999
 data_beh$serum_ami_high =  case_when( data_beh$serum >= 604 ~ 1, 
@@ -446,19 +441,6 @@ df = tibble(slope_same = rand_eff[1:dim(rand_eff)[1],1,6] %>% ave(FUN = scale),
             serum = data_group_temp$serum,
             serum_ami_low = data_group_temp$serum_ami_low)
 
-df %>% glimpse
-
-mod1 <- lm(data = df %>% filter(serum_ami_low != 1) , serum ~ slope_same)
-summary(mod1)
-mod1 <- lm(data = df %>% filter(serum_ami_low == 1) , slope_same ~serum)
-summary(mod1)
-mod1 <- lm(data = df, serum ~ slope_different)
-summary(mod1)
-
-mod1 <- lm(data = df, diff_in_slopes ~ sess_beta1_rstan + sess_w_rstan+ sess_g_rstan)
-summary(mod1)
-mod1 <- lm(data = df, slope_same ~ sess_beta1_rstan + sess_w_rstan+ sess_g_rstan)
-summary(mod1)
 
 df = tibble(slope_same = (rand_eff[1:112,1,6]+ rand_eff[1:112,1,4]) %>% ave(FUN = scale),
             slope_different = (rand_eff[1:112,1,8] + rand_eff[1:112,1,7]+rand_eff[1:112,1,6]+ rand_eff[1:112,1,4]) %>% ave(FUN = scale),
@@ -711,7 +693,6 @@ ggsave("g_all_admin_model.png", plot = g_all, device = NULL, path = NULL,
 
 
 ## correct predictions + plot -------------------------------------------------------
-path_to_stan = ""
 
 
 get_correct_predictions <- function(fit_model) {
@@ -768,6 +749,7 @@ for (l in 1:length(subjList)) {
 
 return(df) 
 }
+
 df_m1 = get_correct_predictions(fit_model)
 data_group$perc_correct = df_m1$perc_correct
 # 
@@ -811,18 +793,7 @@ for (l in 1:length(subjList)) { #
   no_of_trials = length(y_pred_t0[1,l,])
   reward_id <- y_reward[1:no_of_samples,l,]
   reward_id_t0 <- y_reward_t0[1:no_of_samples,l,]
-  # 
-  # data_pred_id <- tibble(
-  #   PredChoice01 = as.vector(t(data_id_t0)),
-  #   PredPrevChoice01 = lag(as.vector(t(data_id_t0))),
-  #   PredStay = as.vector(t(data_id_t0)) == lag(as.vector(t(data_id_t0))),
-  #   sim = as.vector(t(matrix(rep(1: dim(data_id_t0)[1], no_of_trials),dim(data_id_t0)[1]))),
-  #   count_sim = (l-1)*no_of_samples + as.vector(t(matrix(rep(1: dim(data_id_t0)[1], no_of_trials),dim(data_id_t0)[1]))),
-  #   trial =rep(1:no_of_trials,dim(data_id_t0)[1]),
-  #   s= subjList[l],
-  #   drug = drug_id_t0,
-  #   session = 1)
-  # View(data_pred_id)
+
   drug_id_t0 <- unique(data_beh$drug[data_beh$s == subjList[l] & data_beh$session ==1])
   drug_id <- unique(data_beh$drug[data_beh$s == subjList[l]  & data_beh$session ==2])
  
@@ -931,8 +902,7 @@ g_stay_lines  <- plot_grid(g1,
                            nrow = 2)
 g_stay_lines
 
-# data_pred %>% glimpse()
-# data_pred$ID %>% unique()
+
 ## plot model predictions over data... ----
 data_pred <- data_pred %>% mutate(ID = count_sim, stay = PredStay)
 data_pred$session <- as.factor(data_pred$session)
@@ -961,8 +931,7 @@ data_diff<- data_beh %>% filter(!is.na(stay), prev_state_diff != "same") %>%
   summarize(N = n(), 
             mean_stay = mean(stay),
             se_stay = sd(stay)/sqrt(N))
-# data_diff_model$drug %>% glimpse()
-# data_beh$drug %>% glimpse()
+
 g_different_model <- ggplot(data=data_diff, aes(x= prev_points, y = mean_stay, group = session)) + 
   geom_errorbar(aes(x = prev_points, y = mean_stay,ymin = mean_stay - se_stay, ymax =mean_stay + se_stay),colour = "black", width = 0, position = position_dodge(0.2))+
   geom_point(aes(x = prev_points, y = mean_stay, colour = session),position = position_dodge(0.2)) +
@@ -1006,8 +975,6 @@ if (FALSE) {
 
 
 # plot re-estimated model results
-
-# summary(brm.simulated.behavior)
 
 pars_set = c("b_prev_points", "b_prev_points:prev_state_diffdifferent", 
              "b_session2:prev_points:prev_state_diffdifferent:nal_dummyNal",
